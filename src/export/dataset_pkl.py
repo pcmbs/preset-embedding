@@ -79,7 +79,7 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
     with open(Path.cwd() / "synth_parameters_description.pkl", "wb") as f:
         torch.save(dataset.used_params_description, f)
 
-    dataloader = DataLoader(dataset, batch_size=cfg.batch_size, num_workers=8, shuffle=False)
+    dataloader = DataLoader(dataset, batch_size=cfg.batch_size, num_workers=cfg.num_workers, shuffle=False)
 
     pbar = tqdm(dataloader, total=int(cfg.dataset_size / cfg.batch_size), dynamic_ncols=True)
 

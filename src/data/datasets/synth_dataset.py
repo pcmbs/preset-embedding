@@ -8,7 +8,7 @@ from utils.synth import PresetHelper, PresetRenderer
 
 load_dotenv()  # take environment variables from .env
 
-PLUGINS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data"
+PLUGINS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "synths"
 
 
 class SynthDataset(Dataset):

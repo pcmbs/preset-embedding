@@ -13,7 +13,7 @@ dependencies:
     - hydra-colorlog
     - lightning
     - omegaconf
-    - optuna
+    - optuna==3.5.0
     - timm==0.9.10 # 0.4.12 might be required for passt 
     - torchopenl3
     - wandb

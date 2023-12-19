@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from utils.synth import PresetRenderer
 
 load_dotenv()  # take environment variables from .env
-PLUGINS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data"
+PLUGINS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "synths"
 
 
 @pytest.fixture

@@ -22,6 +22,7 @@ LICENSE
 README.md 
 
 div_check/
+data/datasets/
 checkpoints/*.pth*
 checkpoints/*.pt*
 checkpoints/*.npz*

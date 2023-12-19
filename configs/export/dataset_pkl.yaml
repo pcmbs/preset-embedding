@@ -40,6 +40,9 @@ midi_duration_in_sec: 2.0
 # batch size used to generate the dataset (will not be stored)
 batch_size: 128
 
+# number of workers used to generate the dataset
+num_workers: 8
+
 # can be useful to check the target audio for the MRR evaluation since those are taken from the first batch
 export_audio: False
 
