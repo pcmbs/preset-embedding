@@ -1,0 +1,31 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=<filename>
+
+defaults:
+  - base_iter
+  - override /dataset_train: tal_noisemaker
+  - override /dataset_val: tal_noisemaker_mn04_v1
+  - override /m_audio: mn04
+  - override /m_preset: mlp_relu_raw
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+task_name: "dev"
+
+seed: 42
+
+callbacks:
+  model_checkpoint_step:
+    every_n_train_steps: 10 # number of training steps between checkpoints
+
+trainer:
+  max_steps: 60
+  log_every_n_steps: 5
+  val_check_interval: 20
+
+solver: 
+  scheduler: null
+  scheduler_config: null

@@ -1,0 +1,8 @@
+# model checkpoint callbacks are added in experiments
+
+defaults:
+  - model_checkpoint_step # for backup, other ckpt callback are added in experiments
+  #- model_summary 
+  - rich_progress_bar
+  - learning_rate_monitor
+

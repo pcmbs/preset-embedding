@@ -1,0 +1,28 @@
+# https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html 
+
+#TODO: keep k top on validation: either 
+# -> Meam Reciprocal Rank 
+# -> MAE (either by accumulating training loss which is then passed to the val_step hook 
+#    or by using a validation dataloader
+
+# keep k top based on validation loss without epoch:
+# `monitor` (for `save_top_k`) are checked every `every_n_epochs` epoch
+# and 
+# - set val_every_n_steps to a desired number in the trainer 
+# - set `save_on_train_epoch_end` == False to checkpoint at the end of the validation 
+# - set `everry_n_epochs`to 1 to check monitors every n validation epoch
+
+model_checkpoint_top:
+  _target_: lightning.pytorch.callbacks.ModelCheckpoint
+  dirpath: ${paths.output_dir}/checkpoints # directory to save the model file
+  filename: ${model.preset.name}_${model.audio.name}_${dataset_train.name}_s{step}_l{train/loss:.4f}
+  auto_insert_metric_name: False # when True, the checkpoints filenames will contain the metric name
+  
+  monitor: "train/loss" # name of the logged metric which determines when model is improving
+  mode: min # max/min means higher/lower metric value is better
+
+  save_last: null # additionally always save an exact copy of the last checkpoint to a file last.ckpt
+  save_top_k: 1 # save k best models (determined by above metric)
+
+  every_n_epochs: 1 # number of epochs between checkpoints
+  save_on_train_epoch_end: False # run checkpointing at the end of the validation

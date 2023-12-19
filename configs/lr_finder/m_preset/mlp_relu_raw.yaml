@@ -1,0 +1,8 @@
+cfg:
+  _target_: models.preset.mlp_relu_raw
+  hidden_features: 1024
+  num_blocks: 2
+  block_kwargs: 
+    dropout_p: 0.0
+
+name: mlp_relu_raw

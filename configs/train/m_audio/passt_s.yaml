@@ -1,0 +1,4 @@
+cfg:
+  _target_: models.audio.passt_s
+
+name: passt_s

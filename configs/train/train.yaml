@@ -1,0 +1,48 @@
+# @package _global_
+
+defaults:
+  - _self_
+
+  - dataset_train: tal_noisemaker
+  - dataloader_train: default
+  - dataset_val: null # to be overwritten in experiment
+  - m_audio: ??? # audio model, to be overwritten in experiment
+  - m_preset: ??? # preset model, to be overwritten in experiment
+  - solver: default
+  - callbacks: default
+  - trainer: gpu
+  - hydra: default
+  - logger: wandb 
+  - hparams_search: null
+  - paths: default 
+
+  # experiment configs allow for version control of specific hyperparameters
+  # e.g. best hyperparameters for given model and datamodule
+  - experiment: null
+
+  # config for hyperparameter optimization
+  - hparams_search: null
+
+  # debugging config (enable through command line, e.g. `python train.py debug=default)
+  - debug: null 
+
+# task name, determines output directory path
+task_name: "dev"
+
+# tags to help you identify your experiments
+# you can overwrite this in experiment configs
+# overwrite from command line with `python train.py tags="[first_tag, second_tag]"`
+tags: 
+  - ${task_name}
+  - ${dataset_train.name}
+  - ${m_audio.name}
+  - ${m_preset.name}
+
+# set False to skip model training
+train: True
+
+# simply provide checkpoint path to resume training
+ckpt_path: null
+
+# seed for random number generators in pytorch, numpy and python.random
+seed: 42

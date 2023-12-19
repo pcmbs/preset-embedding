@@ -1,0 +1,60 @@
+# @package _global_
+
+# default configs for classic epoch training strategy
+
+defaults:
+  # add model_checkpoint_steps to callback Config Group (add callbacks if required)
+  - /callbacks@callbacks: 
+    - model_checkpoint_epoch
+
+tags: 
+  - ${task_name}
+  - epoch
+  - ${dataset_train.name}
+  - ${m_audio.name}
+  - ${m_preset.name}
+
+
+callbacks:
+  model_checkpoint_step:
+    every_n_train_steps: 100 # number of training steps between checkpoints
+  model_checkpoint_epoch:
+    every_n_epochs: 1 # number of training epochs between checkpoints
+
+dataloader_train:
+  batch_size: 64
+  num_workers: 8
+  shuffle: True
+
+dataset_train:
+  tal_noisemaker: # TODO: change to synth indepedent dataset when implemented
+    cfg: 
+      dataset_size: 1000
+      seed_offset: 100
+
+solver: # for ReduceOnPlateau
+  scheduler:
+    patience: 2 
+  scheduler_config:
+    monitor: train/loss # TODO: update when validation implemented
+    interval: epoch 
+    frequency: 1
+
+trainer:
+  min_epochs: 1
+  max_epochs: 100
+  
+  # max_time: null # TODO: might be useful for SLURM jobs ?
+  
+  # set True to to ensure deterministic results
+  # makes training slower but gives more reproducibility than just setting seeds
+  deterministic: True
+  
+  check_val_every_n_epoch: null # TODO: update when validation implemented
+
+# set hydra output directory
+hydra:
+  run:
+    dir: ${paths.log_dir}/${m_preset.name}-${m_audio.name}/${dataset_train.name}-epoch/${task_name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
+  sweep:
+    dir: ${paths.log_dir}/${m_preset.name}-${m_audio.name}/${dataset_train.name}-epoch/${task_name}_${now:%Y-%m-%d}_${now:%H-%M-%S}

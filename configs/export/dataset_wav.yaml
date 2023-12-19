@@ -1,0 +1,60 @@
+############ Export path Settings
+# Path relative to the project root where the dataset will be exported
+export_relative_path: div_check/data
+
+# tag to be appended to the generated folder (must be provided by the user)
+tag: ???
+
+############ Data generation settings
+
+# synthesizer used to generate the dataset
+synth: tal_noisemaker
+
+# synthesizer parameters to exclude when generating presets
+parameters_to_exclude_str: 
+  - master_volume
+  - voices
+  - lfo_1_sync
+  - lfo_1_keytrigger
+  - lfo_2_sync
+  - lfo_2_keytrigger
+  - envelope*
+  - portamento*
+  - pitchwheel*
+  - delay*
+
+# number of samples to export
+num_samples: 128
+
+# sample rate of the audio 
+sample_rate: 44_100
+
+# Whether to export synth parameters
+export_synth_params: False
+
+# the following are used to instantiate a SynthDataset object (see implementation for details)
+seed_offset: 45_858
+render_duration_in_sec: 5.0
+midi_note: 60
+midi_velocity: 100
+midi_duration_in_sec: 2.0
+
+############ Hydra stuff
+# disable output directory
+root_dir: ${oc.env:PROJECT_ROOT}
+
+hydra:
+  output_subdir: null
+  run:
+    dir: ${root_dir}/${export_relative_path}/${synth}_num_samples=${num_samples}_seed=${seed_offset}_wav_${tag}
+
+  job: 
+    chdir: True
+
+  job_logging:
+    handlers:
+      file:
+        filename: ${hydra.runtime.output_dir}/_configs.log
+    formatters:
+      simple:
+        format: '%(message)s'

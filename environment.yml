@@ -1,0 +1,19 @@
+# environment.yml for conda base environment (pytorch docker image)
+name: base
+
+dependencies:
+  - pip
+  - python-dotenv
+  - pytest
+  - rich
+  - tqdm
+  - pip:
+    - dawdreamer
+    - hydra-core
+    - hydra-colorlog
+    - lightning
+    - omegaconf
+    - optuna
+    - timm==0.9.10 # 0.4.12 might be required for passt 
+    - torchopenl3
+    - wandb
