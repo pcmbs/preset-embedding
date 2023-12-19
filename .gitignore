@@ -5,6 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
+!data/synths/TAL-NoiseMaker.vst3/Contents/x86_64-linux/TAL-NoiseMaker.so
 
 # Test, env, vscode, etc.
 .env
@@ -20,7 +21,6 @@ lightning_logs/
 wandb/
 
 # data
-data/*
-!data/synths/*
-
+data/stats/
+data/datasets/
 
