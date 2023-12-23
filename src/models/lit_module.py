@@ -9,7 +9,7 @@ from lightning.pytorch.utilities.types import STEP_OUTPUT
 import torch
 from torch import nn
 
-from utils.misc import compute_mrr
+from utils.evaluation import compute_mrr
 from utils.logging import RankedLogger
 
 log = RankedLogger(__name__, rank_zero_only=True)

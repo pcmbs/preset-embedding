@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from lightning import LightningModule, Trainer, seed_everything
 from lightning.pytorch.utilities.types import STEP_OUTPUT, OptimizerLRScheduler
 
-from utils.misc import compute_mrr
+from utils.evaluation import compute_mrr
 
 
 class DummyDataset(Dataset):

@@ -5,6 +5,7 @@ defaults:
   - m_preset: mlp_relu_raw
   - sampler: tpe
   - pruner: nop
+  - wandb: default
 
 # TODO: export train dataset change path 
 # path_to_train_dataset: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=1000000_seed=300_pkl_hpt-train_1
@@ -20,6 +21,9 @@ num_trials: 100
 # in which direction the objective should be optimized (minimize or maximize)
 direction: maximize
 
+# metric to optimize (for optuna lightning callback)
+metric_to_optimize: val/mrr
+
 # name of the optuna study
 study_name: ${m_preset.name}_${sampler.name}_${pruner.name}
 
@@ -27,22 +31,28 @@ study_name: ${m_preset.name}_${sampler.name}_${pruner.name}
 num_workers: 8
 num_ranks_mrr: 128
 
-# scheduler config for lightning module
-scheduler_config: 
-  interval: step
-  frequency: 1
+# batch size (not optimized, allows to better analyze the training loss curve for a given study)
+batch_size: ???
+
+# # whether to tune the lr warmup or not
+# tune_lr_warmup: True
+
+# # scheduler config for lightning module
+# scheduler_config: 
+#   interval: step
+#   frequency: 1
 
 ############ Hyperparameters search space (to be passed to optuna.trial.suggest_*)
 # batch size used for training (suggest_categorical)
 search_space:
-  train_batch_size: 
-    - 32
-    - 64
-    - 128
-    - 256
-    - 512
-    - 1024
-    - 2048
+  # train_batch_size: 
+  #   - 32
+  #   - 64
+  #   - 128
+  #   - 256
+  #   - 512
+  #   - 1024
+  #   - 2048
 
   # min/max number of blocks for the preset encoder (suggest_int, linear scale)
   num_blocks: 
@@ -64,18 +74,17 @@ search_space:
     - 0.0001 
     - 0.005
 
-  # LR warmup: min/max total number of warmup steps (suggest_int, linear scale)
-  lr_warmup_total_iters: 
-    - 0
-    - 1000
+  # # LR warmup: min/max total number of warmup steps (suggest_int, linear scale)
+  # lr_warmup_total_iters: 
+  #   - 0
+  #   - 1000
 
-  # LR warmup: min/max start factor (suggest_float, linear scale)
-  lr_warmup_start_factor: 
-    - 0.05
-    - 0.6
+  # # LR warmup: min/max start factor (suggest_float, linear scale)
+  # lr_warmup_start_factor: 
+  #   - 0.05
+  #   - 0.6
 
 ############ Hydra stuff
-# disable output directory
 paths:
   root_dir: ${oc.env:PROJECT_ROOT}
   output_dir: ${hydra:runtime.output_dir}
@@ -83,9 +92,9 @@ paths:
 hydra:
   run:
     dir: ${paths.root_dir}/logs/optuna/${m_preset.name}_${sampler.name}_${pruner.name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
-  # sweep:
-  #   dir:  ${paths.root_dir}/logs/optuna/${m_preset.name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
-  #   subdir: bs=${loader.batch_size}_nb=${m_preset.cfg.num_blocks}_hf=${m_preset.cfg.hidden_features}
+  sweep:
+    dir:  ${paths.root_dir}/logs/optuna/${m_preset.name}_${sampler.name}_${pruner.name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
 
   job: 
     chdir: True

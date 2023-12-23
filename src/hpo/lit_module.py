@@ -3,12 +3,13 @@ Lightning Module for the preset embedding framework.
 """
 from typing import Any, Dict, Optional, Tuple
 
+from optuna.trial import Trial
 from lightning import LightningModule
 from lightning.pytorch.utilities.types import STEP_OUTPUT
 import torch
 from torch import nn
 
-from utils.misc import compute_mrr
+from utils.evaluation import compute_mrr
 from utils.logging import RankedLogger
 
 log = RankedLogger(__name__, rank_zero_only=True)
@@ -27,6 +28,7 @@ class PresetEmbeddingHp(LightningModule):
         lr: float,
         scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None,
         scheduler_config: Optional[Dict[str, Any]] = None,
+        trial: Optional[Trial] = None,
     ):
         super().__init__()
         self.preset_encoder = preset_encoder
@@ -35,6 +37,7 @@ class PresetEmbeddingHp(LightningModule):
         self.lr = lr
         self.scheduler = scheduler
         self.scheduler_config = scheduler_config
+        self.trial = trial
 
         self.mrr_preds = []
         self.mrr_targets = None
@@ -52,7 +55,7 @@ class PresetEmbeddingHp(LightningModule):
         preset_embedding = self(preset)
         return preset_embedding, audio_embedding
 
-    def training_step(self, batch, batch_idx: int):
+    def training_step(self, batch, batch_idx: int) -> STEP_OUTPUT:
         preset_embedding, audio_embedding = self._model_step(batch)
         loss = self.loss(preset_embedding, audio_embedding)
         self.log("train/loss", loss, on_step=True, on_epoch=True)

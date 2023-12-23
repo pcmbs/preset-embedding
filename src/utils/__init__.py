@@ -1,1 +1,1 @@
-from . import data, instantiators, logging, misc, synth
+from . import data, instantiators, logging, evaluation, synth

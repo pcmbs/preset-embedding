@@ -5,7 +5,7 @@ Training script.
 Adapted from https://github.com/ashleve/lightning-hydra-template/blob/main/src/train.py
 """
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import hydra
 import lightning as L
@@ -19,7 +19,6 @@ import wandb
 
 from data.datasets import SynthDatasetPkl
 from utils.logging import RankedLogger, log_hyperparameters
-from utils.misc import get_metric_value
 from utils.instantiators import instantiate_callbacks, instantiate_loggers, check_val_dataset
 
 # logger for this file
@@ -152,15 +151,9 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
 
 
 @hydra.main(version_base="1.3", config_path="../configs/train", config_name="train.yaml")
-def main(cfg: DictConfig) -> Optional[float]:
+def main(cfg: DictConfig) -> None:
     """
     Main entry point for training.
-
-    Args
-    - `cfg`: DictConfig configuration composed by Hydra.
-
-    Returns
-    - Optional[float] with optimized metric value.
     """
 
     # # apply extra utilities
@@ -170,13 +163,7 @@ def main(cfg: DictConfig) -> Optional[float]:
     # train the model
     metrics_dict, _ = train(cfg)
 
-    # TODO: check when doing hparams optim (check get_metric_value from Lightning-hydra template)
-    # # safely retrieve metric value for hydra-based hyperparameter optimization
-    # metric_value = get_metric_value(metric_dict=metric_dict, metric_name=cfg.get("optimized_metric"))
-    metric_value = get_metric_value(metric_dict=metrics_dict, metric_name="val/mrr")
-
-    # return optimized metric value
-    return metric_value
+    log.info(f"Metrics: {metrics_dict}")
 
 
 if __name__ == "__main__":
