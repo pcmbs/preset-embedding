@@ -3,7 +3,7 @@ from functools import partial
 import hydra
 import lightning as L
 from lightning import Trainer
-from omegaconf import ListConfig, OmegaConf, DictConfig
+from omegaconf import OmegaConf, DictConfig
 import optuna
 from optuna.integration import PyTorchLightningPruningCallback
 import torch
@@ -20,50 +20,22 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 
 def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
-    ss = cfg.search_space
-
     # set RNG seed for reproducibility
     L.seed_everything(cfg.seed, workers=True)
     trial.set_user_attr("seed", cfg.seed)
 
     # Sample hyperparameter values if required:
-
-    # if isinstance(ss.train_batch_size, list):
-    #     train_batch_size = trial.suggest_categorical("train_batch_size", ss.train_batch_size)
-    # else:
-    #     train_batch_size = ss.train_batch_size
-
-    if isinstance(ss.num_blocks, ListConfig):
-        num_blocks = trial.suggest_int("num_blocks", *ss.num_blocks)
-    else:
-        num_blocks = ss.num_blocks
-    trial.set_user_attr("m_preset/num_blocks", num_blocks)
-
-    if isinstance(ss.hidden_features, ListConfig):
-        hidden_features = trial.suggest_int("hidden_features", *ss.hidden_features, log=True)
-    else:
-        hidden_features = ss.hidden_features
-    trial.set_user_attr("m_preset/hidden_features", hidden_features)
-
-    if isinstance(ss.optimizer_names, ListConfig):
-        optimizer_name = trial.suggest_categorical("optimizer", ss.optimizer_names)
-    else:
-        optimizer_name = ss.optimizer_names
-    trial.set_user_attr("solver/optimizer", optimizer_name)
-
-    if isinstance(ss.learning_rate, ListConfig):
-        learning_rate = trial.suggest_float("lr", *ss.learning_rate, log=True)
-    else:
-        learning_rate = ss.learning_rate
-    trial.set_user_attr("solver/lr", learning_rate)
+    hps = {}
+    for k, v in cfg.search_space.items():
+        if isinstance(v, DictConfig):
+            hps[k] = getattr(trial, "suggest_" + v.type)(**v.kwargs) if isinstance(v, DictConfig) else v
 
     # instantiate train Dataset & DataLoader
     train_dataset = SynthDatasetPkl(cfg.path_to_train_dataset)
     train_loader = DataLoader(
-        train_dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers
+        train_dataset, batch_size=hps["batch_size"], shuffle=True, num_workers=cfg.num_workers
     )
     trial.set_user_attr("dataset/train", train_dataset.path_to_dataset.stem)
-    trial.set_user_attr("solver/batch_size", cfg.batch_size)
 
     # instantiate validation Dataset & DataLoader
     val_dataset = SynthDatasetPkl(cfg.path_to_val_dataset)
@@ -83,25 +55,14 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
         cfg.m_preset.cfg,
         out_features=train_dataset.embedding_dim,
         preset_helper=preset_helper,
-        num_blocks=num_blocks,
-        hidden_features=hidden_features,
+        num_blocks=hps["num_blocks"],
+        hidden_features=hps["hidden_features"],
     )
     trial.set_user_attr("m_preset/num_params", preset_encoder.num_parameters)
     trial.set_user_attr("m_preset/name", cfg.m_preset.name)
     # # instantiate optimizer
-    optimizer = partial(getattr(torch.optim, optimizer_name), lr=learning_rate)
+    optimizer = partial(getattr(torch.optim, hps["optimizer"]))
 
-    # has_lr_warmup = trial.suggest_categorical("lr_warmup", [True, False])
-    # if has_lr_warmup:
-    #     lr_warmup_total_iters = trial.suggest_int("lr_warmup_total_iters", *ss.lr_warmup_total_iters)
-    #     lr_warmup_start_factor = trial.suggest_float("lr_warmup_start_factor", *ss.lr_warmup_start_factor)
-    #     lr_scheduler = partial(
-    #         torch.optim.lr_scheduler.LinearLR,
-    #         start_factor=lr_warmup_start_factor,
-    #         total_iters=lr_warmup_total_iters,
-    #     )
-    # else:
-    #     lr_scheduler = None
     lr_scheduler = None
     scheduler_config = (
         OmegaConf.to_container(cfg.scheduler_config, resolve=True) if cfg.get("scheduler_config") else None
@@ -111,7 +72,7 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
         preset_encoder=preset_encoder,
         loss=nn.L1Loss(),
         optimizer=optimizer,
-        lr=learning_rate,
+        lr=hps["learning_rate"],
         scheduler=lr_scheduler,
         scheduler_config=scheduler_config,
     )
@@ -121,7 +82,7 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
 
     # instantiate Lightning Trainer
     trainer = Trainer(
-        max_epochs=1,
+        max_epochs=cfg.trainer.max_epochs,
         check_val_every_n_epoch=1,
         logger=logger,
         enable_checkpointing=False,
@@ -129,7 +90,7 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
         enable_progress_bar=False,
         deterministic=True,
         callbacks=[PyTorchLightningPruningCallback(trial, monitor=cfg.metric_to_optimize)],
-        log_every_n_steps=50,
+        log_every_n_steps=cfg.trainer.log_every_n_steps,
         num_sanity_val_steps=0,
     )
 
@@ -141,16 +102,15 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
 
     if logger:
         # log hyperparameters, seed, and dataset refs
-        trainer.logger.log_hyperparams(trial.user_attrs)
         # log sampler and pruner config
-        sampler_pruner_dict = {}
-        for i in ["sampler", "pruner"]:
-            tmp_dict = OmegaConf.to_container(cfg[i], resolve=True)
-            sampler_pruner_dict["sampler/name"] = tmp_dict.get("name")
-            for k, v in tmp_dict["cfg"].items():
-                if k != "_target_":
-                    sampler_pruner_dict[f"sampler/{k}"] = v
-        trainer.logger.log_hyperparams(sampler_pruner_dict)
+        sp_dict = {"sampler": {}, "pruner": {}}
+        for name, d in sp_dict.items():
+            tmp_dict = OmegaConf.to_container(cfg[name], resolve=True)
+            d["name"] = tmp_dict.get("name")
+            for param, value in tmp_dict["cfg"].items():
+                if param != "_target_":
+                    d[f"{param}"] = value
+        trainer.logger.log_hyperparams({"hps": hps, "misc": trial.user_attrs, **sp_dict})
         # terminate wandb run
         wandb.finish()
 
@@ -203,4 +163,14 @@ def hpo(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
+    import sys
+
+    args = ["src/hpo/run.py"]
+
+    sys.argv = args
+
+    gettrace = getattr(sys, "gettrace", None)
+    if gettrace():
+        sys.argv = args
+
     hpo()  # pylint: disable=no-value-for-parameter

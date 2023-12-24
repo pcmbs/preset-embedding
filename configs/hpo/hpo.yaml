@@ -24,65 +24,70 @@ direction: maximize
 # metric to optimize (for optuna lightning callback)
 metric_to_optimize: val/mrr
 
-# name of the optuna study
-study_name: ${m_preset.name}_${sampler.name}_${pruner.name}
-
 # number of workers for the train and val dataloader
 num_workers: 8
 num_ranks_mrr: 128
 
-# batch size (not optimized, allows to better analyze the training loss curve for a given study)
-batch_size: ???
+# kwargs for lightning trainer
+trainer:
+  max_epochs: 100
+  log_every_n_steps: 50
 
-# # whether to tune the lr warmup or not
-# tune_lr_warmup: True
 
-# # scheduler config for lightning module
-# scheduler_config: 
-#   interval: step
-#   frequency: 1
-
-############ Hyperparameters search space (to be passed to optuna.trial.suggest_*)
-# batch size used for training (suggest_categorical)
+############ Hyperparameters search space
+# batch size used for training
 search_space:
-  # train_batch_size: 
-  #   - 32
-  #   - 64
-  #   - 128
-  #   - 256
-  #   - 512
-  #   - 1024
-  #   - 2048
+  batch_size: 
+    type: categorical
+    kwargs:
+      name: batch_size
+      choices:
+        - 32
+        # - 64
+        # - 128
+        # - 256
+        # - 512
+        # - 1024
+        # - 2048
 
-  # min/max number of blocks for the preset encoder (suggest_int, linear scale)
+  # number of blocks for the preset encoder (linear scale)
   num_blocks: 
-    - 1
-    - 6
+    type: int
+    kwargs:
+      name: num_blocks
+      low: 1
+      high: 6
 
-  # min/max number of hidden features for the preset encoder (suggest_int, log scale)
+  # number of hidden features for the preset encoder (linear scale)
   hidden_features: 
-    - 256
-    - 2048
+    type: int
+    kwargs:
+      name: hidden_features
+      low: 256
+      high: 4096
+      step: 256
 
-  # optimizer (suggest_categorical)
-  optimizer_names:
-    - Adam
-    - NAdam
+  # optimizer
+  optimizer:
+    type: categorical
+    kwargs:
+      name: optimizer
+      choices:
+        - Adam
+        # - NAdam
 
-  # min/max learning rate (suggest_float, log scale)
+  # learning rate (log scale)
   learning_rate: 
-    - 0.0001 
-    - 0.005
+    type: float
+    kwargs:
+      name: learning_rate
+      low: 0.0001
+      high: 0.01
+      log: true
 
-  # # LR warmup: min/max total number of warmup steps (suggest_int, linear scale)
-  # lr_warmup_total_iters: 
-  #   - 0
-  #   - 1000
-
-  # # LR warmup: min/max start factor (suggest_float, linear scale)
-  # lr_warmup_start_factor: 
-  #   - 0.05
-  #   - 0.6
+############ Artifacts
+# name of the optuna study
+study_name: results_${now:%Y-%m-%d}_${now:%H-%M-%S}
 
 ############ Hydra stuff
 paths:
