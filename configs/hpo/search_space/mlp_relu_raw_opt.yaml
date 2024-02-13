@@ -1,0 +1,56 @@
+# number of blocks for the preset encoder
+num_blocks: 2
+
+# number of hidden features for the preset encoder
+hidden_features: 1536
+
+# learning rate
+learning_rate: 
+  type: float
+  kwargs:
+    name: learning_rate
+    low: 0.0001
+    high: 0.01
+    log: true
+
+# Adam hyperparameters 
+beta1:
+  type: float
+  kwargs:
+    name: beta1
+    low: 0.8
+    high: 0.999
+    step: 0.001
+
+beta2:
+  type: float
+  kwargs:
+    name: beta2
+    low: 0.90
+    high: 0.999
+    step: 0.001
+
+eps:
+  type: float
+  kwargs:
+    name: eps
+    low: 0.0000000001
+    high: 0.0001
+    log: true
+
+# scheduler hyperparameters
+milestones:
+  type: int
+  kwargs:
+    name: milestones
+    low: 0
+    high: 1500
+
+learning_rate_min:
+  type: float
+  kwargs:
+    name: final_lr
+    low: 0.0000000001
+    high: 0.01
+    log: true
+

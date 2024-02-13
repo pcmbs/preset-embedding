@@ -48,12 +48,16 @@
 	"runArgs": [
 		"--gpus", // make all gpu devices available
 		"all",
-		"--shm-size=4g", // set shared memory to 4GB (for multi-threading)
+		"--shm-size=8g", // set shared memory size (for multi-threading)
 		"--env-file", // set environment variables from .env (incl. credentials) (safe enough for now)
 		".env"
 	],
-	"updateRemoteUserUID": false // avoid generating two images (UID and GID manually set)
-
+	"updateRemoteUserUID": false, // avoid generating two images (UID and GID manually set)
+	// overwrite project root when running in devcontainer (containerEnv didn't work, using postAttachCommand instead)
+	// "containerEnv": {
+	// 	"PROJECT_ROOT": "/workspaces/preset-embedding" 
+	// },
+	"postAttachCommand": "export PROJECT_ROOT=/workspaces/preset-embedding",
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.

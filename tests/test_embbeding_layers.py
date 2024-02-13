@@ -1,9 +1,11 @@
+# pylint: disable=E1102
 import pytest
 import torch
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from data.datasets import SynthDataset
-from models.preset.embedding_layers import RawParameters
+from models.preset.embedding_layers import RawParameters, OneHotEncoding
 from utils.synth import PresetHelper
 
 NUM_SAMPLES = 32
@@ -45,8 +47,8 @@ def test_raw_params_emb_layer(tal_dataset):
     params, _, _ = next(iter(loader))
 
     raw_params_emb = emb_layer(params.clone())
-
-    for cat_values, indices in tal_dataset.preset_helper.grouped_used_cat_params.items():
+    # TODO: refactor that since fn doesnt exist anymore
+    for cat_values, indices in tal_dataset.preset_helper.cat_params_val_dict.items():
         for i in indices:
             for sample, emb in zip(params, raw_params_emb):
                 assert cat_values[int(sample[i])] == emb[i]
@@ -70,3 +72,27 @@ def test_raw_params_emb_layer_out_shape(tal_dataset):
     for sample, emb in zip(params, raw_params_emb):
         assert emb.shape == sample.shape
         assert emb.shape[0] == tal_dataset.num_used_parameters
+
+
+def test_onehot_params_emb_layer(tal_dataset):
+    """
+    Test that the OneHotEncoding correctly embed the categorical parameters
+    """
+
+    loader = DataLoader(tal_dataset, batch_size=NUM_SAMPLES, shuffle=False)
+
+    emb_layer = OneHotEncoding(preset_helper=tal_dataset.preset_helper)
+
+    params, _, _ = next(iter(loader))
+
+    onehot_params_emb = emb_layer(params.clone())
+
+    offset = emb_layer.num_non_cat_params
+
+    for cat_card, indices in tal_dataset.preset_helper.cat_params_card_dict.items():
+        for i in indices:
+            for sample, emb in zip(params, onehot_params_emb):
+                assert torch.all(
+                    F.one_hot(sample[i].to(torch.long), cat_card) == emb[offset : offset + cat_card]
+                )
+            offset += cat_card

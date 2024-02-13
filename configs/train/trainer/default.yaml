@@ -4,7 +4,7 @@ _target_: lightning.pytorch.trainer.Trainer
 default_root_dir: ${paths.output_dir}
 
 # min/max number of trainig steps/epochs (mostly defined in experiments)
-max_epochs: 10
+# max_epochs: 10
 
 # might be useful for SLURM jobs ?
 # max_time: null

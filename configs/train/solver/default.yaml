@@ -3,7 +3,7 @@ _convert_: all # somehow resolves an omegaconf missing key error during trainer.
 
 wandb_watch_args:
   log: gradients
-  log_freq: 100
+  log_freq: 100 
 
 loss:
   _target_: torch.nn.L1Loss

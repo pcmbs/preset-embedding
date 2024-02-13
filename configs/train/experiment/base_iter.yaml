@@ -35,7 +35,6 @@ solver: # for ReduceOnPlateau
     frequency: 100 
 
 trainer:
-  min_steps: 10
   max_epochs: 1 # since a map-style dataset of size 100_000_000_000 is used
   
   # max_time: null # TODO: might be useful for SLURM jobs ?

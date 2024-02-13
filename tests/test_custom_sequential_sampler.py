@@ -115,7 +115,7 @@ def test_custom_sequential_sampler(tmp_path):
         pin_memory=False,
     )
     trainer = Trainer(
-        accelerator="gpu",
+        accelerator="cpu",
         devices=1,
         max_steps=MAX_STEPS,
         enable_checkpointing=False,
@@ -145,7 +145,7 @@ def test_custom_sequential_sampler(tmp_path):
     assert dataloader.sampler.start_idx == SAMPLER_LAST_IDX_TARGET + 1
 
     trainer = Trainer(
-        accelerator="gpu",
+        accelerator="cpu",
         devices=1,
         max_steps=MAX_STEPS * 2,
         enable_checkpointing=False,

@@ -1,4 +1,5 @@
 """Module implementing a custom torch SequentialSampler allowing to resume training from a given sample index."""
+
 from typing import Iterator, Sized
 from torch.utils.data import Sampler
 
@@ -6,9 +7,12 @@ from torch.utils.data import Sampler
 class SequentialSampler2(Sampler[int]):
     r"""Samples elements sequentially, always in the same order.
 
-    Args:
-        data_source (Dataset): dataset to sample from
+    Args
+    - `data_source` (Dataset): dataset to sample from
+    - `start_idx` (int): index of the first sample to be sampled
+
     """
+
     data_source: Sized
 
     def __init__(self, data_source: Sized, start_idx: int = 0) -> None:

@@ -1,5 +1,5 @@
 # enter the path to the pkl dataset folder for the MMR validation
-path: ${paths.root_dir}/div_check/data/tal_noisemaker_mn04_size=65536_seed=45858_dev_1
+path: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=65536_seed=45858_dev-val_1
 
 loader:
   num_ranks: 128 # dataloader batch size corresponds to the number ranking evaluation to compute the mean from (the resulting number of samples per evaluation is thus dataset_size // num_ranks)

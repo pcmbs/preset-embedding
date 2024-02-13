@@ -21,7 +21,7 @@ loader:
   shuffle: True
 
 solver:
-  _target_: hpo.lit_module.PresetEmbeddingHp
+  _target_: hpo.lit_module.PresetEmbeddingHPO
   _convert_: all # somehow resolves an omegaconf missing key error during trainer.fit setup
   loss:
     _target_: torch.nn.L1Loss

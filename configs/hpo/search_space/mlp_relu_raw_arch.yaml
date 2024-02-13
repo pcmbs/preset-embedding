@@ -1,0 +1,34 @@
+# number of blocks for the preset encoder (linear scale)
+num_blocks: 
+  type: int
+  kwargs:
+    name: num_blocks
+    low: 1
+    high: 6
+
+# number of hidden features for the preset encoder (linear scale)
+hidden_features: 
+  type: int
+  kwargs:
+    name: hidden_features
+    low: 256
+    high: 4096
+    step: 256
+
+# optimizer
+optimizer:
+  type: categorical
+  kwargs:
+    name: optimizer
+    choices:
+      - Adam
+      # - NAdam
+
+# learning rate (linear scale)
+learning_rate: 
+  type: float
+  kwargs:
+    name: learning_rate
+    low: 0.0001
+    high: 0.01
+    step: 0.0001

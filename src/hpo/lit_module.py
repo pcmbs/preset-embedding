@@ -1,6 +1,7 @@
 """
 Lightning Module for the preset embedding framework.
 """
+
 from typing import Any, Dict, Optional, Tuple
 
 from optuna.trial import Trial
@@ -15,7 +16,7 @@ from utils.logging import RankedLogger
 log = RankedLogger(__name__, rank_zero_only=True)
 
 
-class PresetEmbeddingHp(LightningModule):
+class PresetEmbeddingHPO(LightningModule):
     """
     Lightning Module for hyperparameter optimization of the preset embedding framework.
     """
@@ -87,6 +88,12 @@ class PresetEmbeddingHp(LightningModule):
             return {"optimizer": optimizer}
 
         scheduler = self.scheduler(optimizer=optimizer)
-        scheduler_config = self.scheduler_config
+
+        if self.scheduler_config is None:
+            scheduler_config = {"interval": "step", "frequency": 1}
+        else:
+            scheduler_config = self.scheduler_config
+
         scheduler_config["scheduler"] = scheduler
+
         return {"optimizer": optimizer, "lr_scheduler": scheduler_config}

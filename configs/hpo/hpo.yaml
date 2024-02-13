@@ -3,18 +3,23 @@
 defaults:
   - _self_
   - m_preset: mlp_relu_raw
+  - search_space: mlp_relu_raw_v1
   - sampler: tpe
   - pruner: nop
   - wandb: default
 
-# TODO: export train dataset change path 
-# path_to_train_dataset: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=1000000_seed=300_pkl_hpt-train_1
-path_to_train_dataset: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=65536_seed=400_pkl_hpt-val_1
-path_to_val_dataset: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=65536_seed=400_pkl_hpt-val_1
+# paths to train and val datasets for HPO
+path_to_train_dataset: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=1000000_seed=300_pkl_hpo-v1
+path_to_val_dataset: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=65536_seed=400_pkl_hpo-val_v1
 
-# seed for the first run (will be incremented by 1 for each subsequent run)
+# tag for the study, which will be added to the name of the study. 
+# Note that if the study already exists, it will be resumed.
+tag: ???
+
+# seed for the RNGs
 seed: 42
 
+############ Optuna configs
 # number of trials to run
 num_trials: 100
 
@@ -24,81 +29,51 @@ direction: maximize
 # metric to optimize (for optuna lightning callback)
 metric_to_optimize: val/mrr
 
+# Stop study after the given number of second(s). Can be used when performing HPO on HPC or GPU providers.
+timeout: null
+
+
+############ Training configs
+# batch size used for training
+batch_size: 512
+
 # number of workers for the train and val dataloader
-num_workers: 8
+num_workers: 0 # reading from a torch tensor in memory is cheap, doesn't worth the overhead
 num_ranks_mrr: 128
 
 # kwargs for lightning trainer
 trainer:
-  max_epochs: 100
+  max_epochs: 1
   log_every_n_steps: 50
+  val_check_interval: 0.25
 
+# Optimizer to use
+optimizer:
+  _target_: torch.optim.Adam
+  _partial_: true
+  weight_decay: 0.0
 
-############ Hyperparameters search space
-# batch size used for training
-search_space:
-  batch_size: 
-    type: categorical
-    kwargs:
-      name: batch_size
-      choices:
-        - 32
-        # - 64
-        # - 128
-        # - 256
-        # - 512
-        # - 1024
-        # - 2048
-
-  # number of blocks for the preset encoder (linear scale)
-  num_blocks: 
-    type: int
-    kwargs:
-      name: num_blocks
-      low: 1
-      high: 6
-
-  # number of hidden features for the preset encoder (linear scale)
-  hidden_features: 
-    type: int
-    kwargs:
-      name: hidden_features
-      low: 256
-      high: 4096
-      step: 256
-
-  # optimizer
-  optimizer:
-    type: categorical
-    kwargs:
-      name: optimizer
-      choices:
-        - Adam
-        # - NAdam
-
-  # learning rate (log scale)
-  learning_rate: 
-    type: float
-    kwargs:
-      name: learning_rate
-      low: 0.0001
-      high: 0.01
-      log: true
+# LR scheduler
+lr_scheduler:
+  _target_: utils.lr_schedulers.lin_cos_scheduler_builder
+  _partial_: true
+  linear_start_factor: 1
+  linear_end_factor: 1
 
 ############ Artifacts
 # name of the optuna study
-study_name: results_${now:%Y-%m-%d}_${now:%H-%M-%S}
+study_name: ${m_preset.name}_${tag}
 
-############ Hydra stuff
+############ Hydra configs
 paths:
   root_dir: ${oc.env:PROJECT_ROOT}
   output_dir: ${hydra:runtime.output_dir}
 
 hydra:
   run:
-    dir: ${paths.root_dir}/logs/optuna/${m_preset.name}_${sampler.name}_${pruner.name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
+    dir: ${paths.root_dir}/logs/optuna/${m_preset.name}_${tag}
   sweep:
-    dir:  ${paths.root_dir}/logs/optuna/${m_preset.name}_${sampler.name}_${pruner.name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
+    dir:  ${paths.root_dir}/logs/optuna/${m_preset.name}_${tag}
     subdir: ${hydra.job.num}
 
   job: 

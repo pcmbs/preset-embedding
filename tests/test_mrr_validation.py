@@ -105,6 +105,7 @@ def test_mrr_validation():
         enable_checkpointing=False,
         enable_model_summary=False,
         num_sanity_val_steps=0,
+        logger=False,
     )
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
     assert model.last_mrr > model.first_mrr and model.last_mrr > 0.5

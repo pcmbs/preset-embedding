@@ -70,6 +70,7 @@ class PresetEmbeddingLitModule(LightningModule):
                 self.preset_encoder,
                 log=self.wandb_watch_args["log"],
                 log_freq=self.wandb_watch_args["log_freq"],
+                log_graph=False,
             )
 
     def training_step(self, batch, batch_idx: int):

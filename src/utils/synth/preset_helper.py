@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import List, Sequence, Tuple
 import data.synths
 
@@ -49,7 +50,8 @@ class PresetHelper:
         ) == len(self._used_params)
 
         self._grouped_used_params = self._group_params(self._used_params)
-        self._grouped_cat_params = self._group_used_cat_params_per_values(self._grouped_used_params)
+        self._cat_params_val_dict = self._group_used_cat_params_per_values(self._grouped_used_params)
+        self._cat_params_card_dict = self._group_used_cat_params_per_cardinality(self._grouped_used_params)
 
     @property
     def synth_name(self) -> str:
@@ -111,9 +113,14 @@ class PresetHelper:
         return self._grouped_used_params
 
     @property
-    def grouped_used_cat_params(self) -> dict:
+    def cat_params_val_dict(self) -> dict:
         """Return the used categorical synthesizer parameters grouped by category values as dictionary."""
-        return self._grouped_cat_params
+        return self._cat_params_val_dict
+
+    @property
+    def cat_params_card_dict(self) -> dict:
+        """Return the used categorical synthesizer parameters grouped by cardinality as dictionary."""
+        return self._cat_params_card_dict
 
     @property
     def used_params_description(self) -> List[Tuple[int, str]]:
@@ -156,14 +163,26 @@ class PresetHelper:
         return grouped_params
 
     def _group_used_cat_params_per_values(self, grouped_used_params):
-        grouped_cat_params = {}
+        cat_params_val_dict = {}
         for (cat_values, _), indices in grouped_used_params["cat"].items():
-            if cat_values in grouped_cat_params:
-                grouped_cat_params[cat_values] += indices
+            if cat_values in cat_params_val_dict:
+                cat_params_val_dict[cat_values] += indices
             else:
-                grouped_cat_params[cat_values] = indices
+                cat_params_val_dict[cat_values] = indices
 
-        return grouped_cat_params
+        # deepcopy needed since is otherwise values can be added by
+        # _group_used_cat_params_per_cardinality() (weird)
+        return deepcopy(cat_params_val_dict)
+
+    def _group_used_cat_params_per_cardinality(self, grouped_used_params):
+        cat_params_card_dict = {}
+        for (cat_values, _), indices in grouped_used_params["cat"].items():
+            if len(cat_values) in cat_params_card_dict:
+                cat_params_card_dict[len(cat_values)] += indices
+            else:
+                cat_params_card_dict[len(cat_values)] = indices
+
+        return deepcopy(cat_params_card_dict)
 
 
 if __name__ == "__main__":

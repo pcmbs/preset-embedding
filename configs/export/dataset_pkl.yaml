@@ -1,6 +1,6 @@
 ############ Export path Settings
 # Path relative to the project root where the dataset will be exported
-export_relative_path: div_check/data
+export_relative_path: data/datasets
 
 # tag to be appended to the generated folder (must be provided by the user)
 tag: ???

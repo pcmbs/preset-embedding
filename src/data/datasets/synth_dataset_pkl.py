@@ -2,6 +2,7 @@
 Module implementing a torch Dataset used to load audio embeddings (targets) and
 synth parameters (features) from .pkl files.
 """
+
 from pathlib import Path
 from typing import List, Tuple, Union
 import torch
@@ -14,7 +15,17 @@ class SynthDatasetPkl(Dataset):
     (features) from .pkl files.
     """
 
-    def __init__(self, path_to_dataset: Union[str, Path]):
+    def __init__(self, path_to_dataset: Union[str, Path], mmap: bool = True):
+        """
+        Dataset used to load audio embeddings (targets) and synth parameters
+        (features) from .pkl files.
+
+        Args
+        - `path_to_dataset` (Union[str, Path]): path to the folder containing the pickled files
+        - `mmap` (bool): whether the audio_embeddings.pkl and synth_params.pkl tensors should be mmaped
+        rather than loading all the storages into memory. This can be advantageous for large datasets.
+        (Default: True)
+        """
         super().__init__()
 
         path_to_dataset = Path(path_to_dataset) if isinstance(path_to_dataset, str) else path_to_dataset
@@ -30,10 +41,10 @@ class SynthDatasetPkl(Dataset):
             self._synth_params_descr = torch.load(f)
 
         with open(self.path_to_dataset / "synth_params.pkl", "rb") as f:
-            self.synth_params = torch.load(f)
+            self.synth_params = torch.load(f, map_location="cpu", mmap=mmap)
 
         with open(self.path_to_dataset / "audio_embeddings.pkl", "rb") as f:
-            self.audio_embeddings = torch.load(f)
+            self.audio_embeddings = torch.load(f, map_location="cpu", mmap=mmap)
 
         assert len(self.audio_embeddings) == len(self.synth_params)
 

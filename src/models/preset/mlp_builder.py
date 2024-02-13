@@ -7,7 +7,6 @@ from models.preset.embedding_layers import RawParameters
 from utils.synth import PresetHelper
 
 # TODO: all without Dropout if one-epoch learning
-# TODO: add embedding layer and modify in_features to embedding_dim
 # TODO: split blocks in synth-specific and synth-independent
 
 # TODO: implement
