@@ -24,12 +24,22 @@ parameters_to_exclude_str:
   - pitchwheel*
   - delay*
 
+
 ### SynthDataset settings
+
 # dataset size:
-# need to be num_eval * num_preds_per_eval for MRR validation dataset
-# e.g., for 128 evaluations and 512 predictions per eval
-# we have 128 * 512 = 64_512 samples
+# For MMR validation dataset: need to be num_eval * num_preds_per_eval
+# e.g., for 128 evaluations and 512 predictions per eval we have 128 * 512 = 64_512 samples
 dataset_size: 65_536
+
+# start index of the dataset
+# Can be used to generate a subset of the dataset if set together with dataset_size
+# in order to generate a dataset simultaneously on several machines
+# Ex: start_index=0 and dataset_size=64_512 will generate the first 64_512 samples while
+#     start_index=64_512 and dataset_size=64_512 will generate the second 64_512 samples, etc.
+start_index: 0 # inclusive
+end_index: ${dataset_size} # exclusive
+
 # the following are used to instantiate a SynthDataset object (see implementation for details)
 seed_offset: 45_858
 render_duration_in_sec: 5.0

@@ -50,14 +50,20 @@
 		"all",
 		"--shm-size=8g", // set shared memory size (for multi-threading)
 		"--env-file", // set environment variables from .env (incl. credentials) (safe enough for now)
-		".env"
+		".env",
+		"--mount",
+		"type=bind,src=/home/pcmbs/mounts/datasets,dst=/workspaces/preset-embedding/data/datasets",
+		"--mount",
+		"type=bind,src=/home/pcmbs/mounts/logs,dst=/workspaces/preset-embedding/logs",
+		"--mount",
+		"type=bind,src=/home/pcmbs/mounts/checkpoints,dst=/workspaces/preset-embedding/checkpoints"
 	],
 	"updateRemoteUserUID": false, // avoid generating two images (UID and GID manually set)
 	// overwrite project root when running in devcontainer (containerEnv didn't work, using postAttachCommand instead)
 	// "containerEnv": {
 	// 	"PROJECT_ROOT": "/workspaces/preset-embedding" 
 	// },
-	"postAttachCommand": "export PROJECT_ROOT=/workspaces/preset-embedding",
+	"postAttachCommand": "export PROJECT_ROOT=/workspaces/preset-embedding"
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.

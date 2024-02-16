@@ -8,12 +8,11 @@ See `export_dataset_pkl_cfg.yaml` for more details.
 The results are exported to
 `<project-root>/<export-relative-path>/<synth>_<audio_fe>_<dataset-size>_<seed-offset>_pkl_<tag>`
 
-It is possible to interrupt the process at the end of the current iteration by pressing Ctrl+Z. 
+It is possible to interrupt the process at the end of the current iteration by pressing Ctrl+Z (SIGSTP). 
 Doing so will export a resume state file that will be used to resume the process. 
 
 """
 import logging
-import os
 from pathlib import Path
 import signal
 import sys
@@ -21,18 +20,16 @@ import sys
 import hydra
 from omegaconf import DictConfig
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from tqdm import tqdm
 from scipy.io import wavfile
 
 from data.datasets import SynthDataset
 from models import audio as audio_models
-from utils.data import SequentialSampler2
 from utils.synth import PresetHelper
 
-log = logging.getLogger(__name__)
-
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Using device: {DEVICE}")
 
 RESUME_STATE_FILE = "resume_state.pkl"
 
@@ -41,24 +38,30 @@ RESUME_STATE_FILE = "resume_state.pkl"
 INTERRUPTED = False
 
 
-def batch_to_idx(batch_index: int, batch_size: int) -> int:
-    """Convert a batch index to an iteration index."""
-    return batch_index * batch_size
-
-
-def sigstp_handler(signal, frame) -> None:
-    """Handler for SIGSTP signal, interrupt the export process."""
+def graceful_shutdown(signum, frame) -> None:
+    """Handler for signal to interrupt the export process."""
     global INTERRUPTED  # pylint: disable=W0603
-    print("Ctrl+Z detected, the export will be aborted at the end of the current iteration...")
+    print(f"Received signal {signum}, the export will be aborted at the end of the current iteration...")
     INTERRUPTED = True
 
 
+log = logging.getLogger(__name__)
+
 # Set the SIGSTP signal handler
-signal.signal(signal.SIGTSTP, sigstp_handler)
+signal.signal(signal.SIGTSTP, graceful_shutdown)
+signal.signal(signal.SIGUSR1, graceful_shutdown)  # For HPC
+signal.signal(signal.SIGTERM, graceful_shutdown)  # For HPC
+signal.signal(signal.SIGINT, graceful_shutdown)  # For HPC
 
 
 @hydra.main(version_base=None, config_path="../../configs/export", config_name="dataset_pkl")
 def export_dataset_pkl(cfg: DictConfig) -> None:
+
+    is_subset = False
+    start_index = cfg.start_index
+    end_index = cfg.end_index
+    offset_index = 0  # for indexing loaded tensor when resuming
+
     # instantiate audio model, preset helper and dataset
     audio_fe = getattr(audio_models, cfg.audio_fe)()
     audio_fe.to(DEVICE)
@@ -80,18 +83,22 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
     if (Path.cwd() / "resume_state.pkl").exists():
         with open(Path.cwd() / "resume_state.pkl", "rb") as f:
             saved_data = torch.load(f)
-            start_index = saved_data["start_index"]
+            resume_index = saved_data["resume_index"]
             audio_embeddings = saved_data["audio_embeddings"]
             synth_params = saved_data["synth_params"]
 
+        offset_index = resume_index - start_index  # update offset index
+        start_index = resume_index  # overwrite start index to resume
         log.info(
-            f"resume_state.pkl found, resuming from batch {start_index}.\n"
-            f"Number of remaining batches to be "
-            f"generated: {(cfg.dataset_size - cfg.batch_size * start_index) // cfg.batch_size}",
+            f"resume_state.pkl found, resuming from sample {start_index}.\n"
+            f"Number of remaining samples to be "
+            f"generated: {(cfg.end_index - start_index)}",
         )
 
     else:
-        start_index = 0
+        # don't put subset flag for interrupted export
+        if start_index != 0 or end_index != cfg.dataset_size:
+            is_subset = True
 
         if cfg.export_audio:
             audio_path = Path.cwd() / "audio"
@@ -118,72 +125,96 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
         with open(Path.cwd() / "configs.pkl", "wb") as f:
             torch.save(configs_dict, f)
 
-        log.info("")
-        log.info("Synth parameters description")
+        log.info("\nSynth parameters description")
         for param in dataset.used_params_description:
             log.info(param)
 
         with open(Path.cwd() / "synth_parameters_description.pkl", "wb") as f:
             torch.save(dataset.used_params_description, f)
 
-        audio_embeddings = torch.empty((cfg.dataset_size, audio_fe.out_features), device="cpu")
-        synth_params = torch.empty((cfg.dataset_size, dataset.num_used_parameters), device="cpu")
+        audio_embeddings = torch.empty((end_index - start_index, audio_fe.out_features), device="cpu")
+        synth_params = torch.empty((end_index - start_index, dataset.num_used_parameters), device="cpu")
+
+    if start_index != 0 or end_index != cfg.dataset_size:
+        dataset = Subset(dataset, range(start_index, end_index))
+        log.info(f"\nExporting samples {start_index} to {end_index-1}...")
+    else:
+        log.info(f"\nExporting all {cfg.dataset_size} samples in the dataset...")
 
     dataloader = DataLoader(
         dataset,
         batch_size=cfg.batch_size,
         num_workers=cfg.num_workers,
         shuffle=False,
-        sampler=SequentialSampler2(dataset, start_idx=start_index * cfg.batch_size),
     )
 
     pbar = tqdm(
         dataloader,
-        total=(cfg.dataset_size - cfg.batch_size * start_index) // cfg.batch_size,
+        total=(end_index - start_index) // cfg.batch_size,
         dynamic_ncols=True,
     )
 
     for i, (params, audio, _) in enumerate(pbar):
-        i += start_index
+        slice_start = i * cfg.batch_size + offset_index
+        slice_end = slice_start + params.shape[0]  # instead of batch size since drop_last=False
 
         audio = audio.to(DEVICE)
         with torch.no_grad():
             audio_emb = audio_fe(audio)
 
-        audio_embeddings[i * cfg.batch_size : (i + 1) * cfg.batch_size] = audio_emb.cpu()
-        synth_params[i * cfg.batch_size : (i + 1) * cfg.batch_size] = params.cpu()
+        audio_embeddings[slice_start:slice_end] = audio_emb.cpu()
+        synth_params[slice_start:slice_end] = params.cpu()
 
         if cfg.export_audio:
             for j, sample in enumerate(audio):
                 sample = sample.cpu().numpy()
-                wavfile.write(audio_path / f"{i+j}.wav", audio_fe.sample_rate, sample.T)
+                wavfile.write(
+                    audio_path / f"{start_index + slice_start+j}.wav",
+                    audio_fe.sample_rate,
+                    sample.T,
+                )
 
         if INTERRUPTED:
-            current_index = i
-            log.info(f"Finished generating batch {i}, interrupting generation...")
+            new_starting_index = start_index + slice_end
+            log.info(
+                f"Finished generating samples for the current iteration "
+                f"(samples {start_index + slice_start} to {start_index + slice_end - 1}), "
+                f"interrupting generation..."
+            )
             break
 
     if INTERRUPTED:
-        log.info("Saving resume_state.pkl file and exiting...")
+        log.info("Saving resume_state.pkl file...")
         with open(Path.cwd() / "resume_state.pkl", "wb") as f:
             saved_data = {
-                "start_index": current_index + 1,
+                "resume_index": new_starting_index,
                 "audio_embeddings": audio_embeddings,
                 "synth_params": synth_params,
             }
             torch.save(saved_data, f)
+        log.info("Exiting Python program...")
         sys.exit(0)
 
-    log.info("All samples generated, saving audio embeddings and synth params tensors...")
-    # Remove the interrupt file if export completes successfully
-    if os.path.exists(RESUME_STATE_FILE):
-        os.remove(RESUME_STATE_FILE)
+    # Remove the resume state file if export completes successfully
+    if (Path.cwd() / "resume_state.pkl").exists():
+        (Path.cwd() / "resume_state.pkl").unlink()
 
-    with open(Path.cwd() / "audio_embeddings.pkl", "wb") as f:
+    # Save the audio_embeddings and synth_params
+    # take start_index from the configs since was changed if interrupted
+    filename_suffix = f"_{cfg.start_index}_{cfg.end_index-1}" if is_subset else ""
+
+    log.info(
+        f"All samples generated, "
+        f"saving audio_embeddings{filename_suffix}.pkl and synth_params{filename_suffix}.pkl..."
+    )
+
+    with open(Path.cwd() / f"audio_embeddings{filename_suffix}.pkl", "wb") as f:
         torch.save(audio_embeddings, f)
 
-    with open(Path.cwd() / "synth_params.pkl", "wb") as f:
+    with open(Path.cwd() / f"synth_params{filename_suffix}.pkl", "wb") as f:
         torch.save(synth_params, f)
+
+    log.info("Export completed successfully!")
 
 
 if __name__ == "__main__":

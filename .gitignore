@@ -11,6 +11,10 @@ __pycache__/
 .env
 *.egg-info
 .pytest_cache/
+.vscode/
+.devcontainer/
+others/
+
 
 # Artifacts
 checkpoints/
@@ -22,4 +26,4 @@ wandb/
 # data
 data/stats/
 data/datasets/
-
+!data/datasets/.gitkeep

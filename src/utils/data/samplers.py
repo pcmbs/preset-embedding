@@ -1,4 +1,7 @@
-"""Module implementing a custom torch SequentialSampler allowing to resume training from a given sample index."""
+"""
+Module implementing a custom torch SequentialSampler allowing
+to resume training from a given sample index.
+"""
 
 from typing import Iterator, Sized
 from torch.utils.data import Sampler

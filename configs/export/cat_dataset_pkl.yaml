@@ -1,0 +1,33 @@
+############ Export path Settings
+# Path relative to the project root where the dataset will be exported
+export_relative_path: data/datasets
+
+# keys to retrieve folder name present in the export_relative_path
+synth: tal_noisemaker
+audio_fe: mn04
+dataset_size: ???
+seed_offset: ???
+tag: ???
+
+# whether to delete the subset pkl files after concatenation
+delete_subsets: True
+
+############ Hydra stuff
+# disable output directory
+root_dir: ${oc.env:PROJECT_ROOT}
+
+hydra:
+  output_subdir: null
+  run:
+    dir: ${root_dir}/${export_relative_path}/${synth}_${audio_fe}_size=${dataset_size}_seed=${seed_offset}_pkl_${tag}
+
+  job: 
+    chdir: True
+
+  job_logging:
+    handlers:
+      file:
+        filename: ${hydra.runtime.output_dir}/cat_dataset.log
+    formatters:
+      simple:
+        format: '%(message)s'

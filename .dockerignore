@@ -29,3 +29,4 @@ checkpoints/*.pt*
 checkpoints/*.npz*
 checkpoints/*.ckpt
 logs/ 
+others/

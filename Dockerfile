@@ -22,11 +22,20 @@ RUN apt-get update && \
 ARG UNAME=nonroot
 ARG UID=1000
 ARG GID=1000
+ARG ADDITIONAL_GROUPS=
+
 
 # Creates a non-root group and user with an explicit GID and UID and 
 # change the required folders ownership to this user and give read/write access
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 RUN groupadd -g $GID $UNAME && \
     useradd -u $UID -g $GID -l -m -s /bin/bash -d /home/$UNAME -p '' $UNAME && \
+    # Add user to additional groups if provided
+    if [ -n "$ADDITIONAL_GROUPS" ]; then \
+    for group in $(echo $ADDITIONAL_GROUPS | tr ',' ' '); do \
+    groupadd -g $group group$group && usermod -a -G group$group $UNAME; \
+    done; \
+    fi && \
     chown -R $UNAME:$UNAME /workspace && \
     chmod -R 0775 /workspace 
 
