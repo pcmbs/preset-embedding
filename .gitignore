@@ -25,3 +25,5 @@ wandb/
 
 # data
 data/stats/
+data/datasets/**/**
+!data/datasets/.gitkeep
