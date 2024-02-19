@@ -11,22 +11,16 @@ loss:
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.001
   weight_decay: 0.0
 
-# the following "???" values are define in base_{iter,epoch} experiments
+lr: 0.007
 
-# https://pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.ReduceLROnPlateau.html
+# LR scheduler
 scheduler:
-  _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
+  _target_: utils.lr_schedulers.lin_cos_scheduler_builder
   _partial_: true
-  mode: min
-  factor: 0.1 # Factor by which the learning rate will be reduced
-  patience: ??? # Number of `scheduler.step()` calls (see frequency below) with no improvement after which learning rate will be reduce
-
-# https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.core.LightningModule.html#lightning.pytorch.core.LightningModule.configure_optimizers 
-# the scheduler key-value pair is passed in the configure_optimizers method at runtime
-scheduler_config:
-  monitor: ??? # Metric to monitor for schedulers like `ReduceLROnPlateau` 
-  interval: ??? # step or epoch (used by frequency below)
-  frequency: ??? # How many epochs/steps should pass between calls to `scheduler.step()`. 
+  # total_steps: # should be (num_epochs * num_training_examples) / batch_size
+  milestone: 1400
+  final_lr: 0.0000001
+  linear_start_factor: 1
+  linear_end_factor: 1

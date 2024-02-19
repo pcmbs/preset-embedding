@@ -1,0 +1,36 @@
+# @package _global_
+
+defaults:
+  - override /train_dataset: tal_noisemaker_mn04_v1
+  - override /val_dataset: tal_noisemaker_mn04_v1
+  - override /m_preset: mlp_relu_raw
+
+train_dataset:
+  loader:
+    batch_size: 512
+
+val_dataset:
+  loader:
+    num_ranks: 512
+
+m_preset:
+  cfg:
+    hidden_features: 1536
+    num_blocks: 2
+
+solver:
+  lr: 0.007
+  scheduler:
+    total_steps: 20000 # should be (num_epochs * num_training_examples) / batch_size
+    milestone: 1400 # keep milestone from HPO (although 1953 steps, let see)
+    final_lr: 0.0000001
+
+trainer:
+  # kwargs for lightning trainer
+  max_epochs: 1
+  
+  # set True to to ensure deterministic results
+  # makes training slower but gives more reproducibility than just setting seeds
+  deterministic: True
+  
+    

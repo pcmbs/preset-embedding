@@ -11,7 +11,7 @@ import hydra
 import lightning as L
 import torch
 from torch import nn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from lightning import Callback, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig
@@ -20,6 +20,7 @@ import wandb
 from data.datasets import SynthDatasetPkl
 from utils.logging import RankedLogger, log_hyperparameters
 from utils.instantiators import instantiate_callbacks, instantiate_loggers, check_val_dataset
+from utils.synth.preset_helper import PresetHelper
 
 # logger for this file
 log = RankedLogger(__name__, rank_zero_only=True)
@@ -43,67 +44,44 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
     if cfg.get("seed"):
         L.seed_everything(cfg.seed)
 
-    log.info(f"Instantiating pre-trained audio feature extractor model <{cfg.m_audio.cfg._target_}>")
-    audio_fe: nn.Module = hydra.utils.instantiate(cfg.m_audio.cfg)
-
-    log.info(f"Instantiating training Dataset <{cfg.dataset_train.cfg._target_}>")
-    dataset_train: Dataset = hydra.utils.instantiate(cfg.dataset_train.cfg, sample_rate=audio_fe.sample_rate)
-
-    if cfg.get("dataset_val"):
-        log.info("Instantiating validation Dataset & DataLoader")
-        dataset_val = SynthDatasetPkl(cfg.dataset_val.path)
-        val_loader = DataLoader(
-            dataset_val,
-            batch_size=cfg.dataset_val.loader.num_ranks,
-            num_workers=cfg.dataset_val.loader.num_workers,
-            shuffle=cfg.dataset_val.loader.shuffle,
-            pin_memory=cfg.dataset_val.loader.pin_memory,
-            drop_last=cfg.dataset_val.loader.drop_last,
-        )
-        check_val_dataset(cfg, dataset_train, dataset_val)
-    else:
-        dataset_val = None
-        val_loader = None
-
-    # intializing custom Sampler in case of one-epoch training and
-    # resuming training by providing the last sample index.
-    # This step is done here as it doesn't work when done in the Lightning Module.
-    if cfg.dataloader_train.get("sampler"):
-        log.info(f"Instantiating Sampler <{cfg.dataloader_train.sampler._target_}> and training DataLoader")
-        if cfg.get("ckpt_path"):
-            sampler_idx_new = torch.load(cfg.ckpt_path)["sampler_idx_last"] + 1
-            log.info(f"Resuming one-epoch training from sample: {sampler_idx_new}")
-        else:
-            sampler_idx_new = 0
-        sampler = hydra.utils.instantiate(
-            cfg.dataloader_train.sampler,
-            data_source=dataset_train,
-            start_idx=sampler_idx_new,
-        )
-    else:
-        log.info("No custom Sampler found, skipping...")
-        sampler = None
-
+    log.info(f"Instantiating training Dataset: {cfg.train_dataset.path}")
+    train_dataset = SynthDatasetPkl(cfg.train_dataset.path)
     train_loader: DataLoader = DataLoader(
-        dataset=dataset_train,
-        batch_size=cfg.dataloader_train.batch_size,
-        num_workers=cfg.dataloader_train.num_workers,
-        pin_memory=cfg.dataloader_train.pin_memory,
-        drop_last=cfg.dataloader_train.drop_last,
-        sampler=sampler,
+        dataset=train_dataset,
+        batch_size=cfg.train_dataset.loader.batch_size,
+        num_workers=cfg.train_dataset.loader.num_workers,
+        pin_memory=cfg.train_dataset.loader.pin_memory,
+        drop_last=cfg.train_dataset.loader.drop_last,
     )
 
-    log.info(f"Instantiating preset encoder <{cfg.m_preset.cfg._target_}>")
-    preset_encoder: nn.Module = hydra.utils.instantiate(
-        cfg.m_preset.cfg, preset_helper=dataset_train.preset_helper, out_features=audio_fe.out_features
+    log.info(f"Instantiating validation Dataset: {cfg.val_dataset.path}")
+    val_dataset = SynthDatasetPkl(cfg.val_dataset.path)
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=cfg.val_dataset.loader.num_ranks,
+        num_workers=cfg.val_dataset.loader.num_workers,
+        shuffle=cfg.val_dataset.loader.shuffle,
+        pin_memory=cfg.val_dataset.loader.pin_memory,
+        drop_last=cfg.val_dataset.loader.drop_last,
+    )
+    check_val_dataset(train_dataset, val_dataset)
+
+    log.info(f"Instantiating Preset Helper for synth {train_dataset.synth_name} and excluded params\n")
+    log.info(f"{train_dataset.configs_dict['params_to_exclude']}")
+    preset_helper = PresetHelper(
+        synth_name=train_dataset.synth_name,
+        params_to_exclude_str=train_dataset.configs_dict["params_to_exclude"],
+    )
+
+    log.info(f"Instantiating Preset Encoder <{cfg.m_preset.cfg._target_}>")
+    m_preset: nn.Module = hydra.utils.instantiate(
+        cfg.m_preset.cfg, out_features=train_dataset.embedding_dim, preset_helper=preset_helper
     )
 
     log.info(f"Instantiating Lightning Module <{cfg.solver._target_}>")
-    model: LightningModule = hydra.utils.instantiate(
-        cfg.solver, audio_feature_extractor=audio_fe, preset_encoder=preset_encoder
-    )
+    model: LightningModule = hydra.utils.instantiate(cfg.solver, preset_encoder=m_preset)
 
-    log.info("Instantiating callbacks...")
+    log.info("Instantiating Callbacks...")
     callbacks: List[Callback] | None = instantiate_callbacks(cfg.get("callbacks"))
 
     log.info("Instantiating loggers...")
@@ -114,10 +92,9 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
 
     object_dict = {
         "cfg": cfg,
-        "dataset_train": dataset_train,
-        "dataset_val": dataset_val,
-        "audio_fe": audio_fe,
-        "preset_encoder": preset_encoder,
+        "train_dataset": train_dataset,
+        "val_dataset": val_dataset,
+        "m_preset": m_preset,
         "trainer": trainer,
     }
 
@@ -155,11 +132,6 @@ def main(cfg: DictConfig) -> None:
     """
     Main entry point for training.
     """
-
-    # # apply extra utilities
-    # # (e.g. ask for tags if none are provided in cfg, print cfg tree, etc.)
-    # extras(cfg)
-
     # train the model
     metrics_dict, _ = train(cfg)
 

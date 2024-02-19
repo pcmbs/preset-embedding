@@ -7,3 +7,5 @@ loader:
   shuffle: False # always use the same targets
   pin_memory: False
   drop_last: True
+
+name: tal_noisemaker_mn04_val-v1

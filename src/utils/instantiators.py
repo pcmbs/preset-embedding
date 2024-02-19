@@ -61,18 +61,18 @@ def instantiate_loggers(logger_cfg: DictConfig) -> List[Logger]:
     return logger
 
 
-def check_val_dataset(cfg: DictConfig, dataset_train: Dataset, dataset_val: Dataset) -> None:
+def check_val_dataset(train_dataset: Dataset, val_dataset: Dataset) -> None:
     assert (
-        dataset_val.audio_fe_name == cfg["m_audio"]["name"]
-    ), f"the audio model used for training and validation should be the same: {cfg['m_audio']['name']} != {dataset_val.audio_fe_name}"
+        val_dataset.audio_fe_name == train_dataset.audio_fe_name
+    ), f"the audio model used for training and validation should be the same: {train_dataset.audio_fe_name} != {val_dataset.audio_fe_name}"
     assert (
-        dataset_val.synth_name == dataset_train.synth_name
-    ), f"the synthesizer used for training and validation should be the same: {dataset_train.synth_name} != {dataset_val.synth_name}"
+        val_dataset.synth_name == train_dataset.synth_name
+    ), f"the synthesizer used for training and validation should be the same: {train_dataset.synth_name} != {val_dataset.synth_name}"
     assert (
-        dataset_val.configs_dict["params_to_exclude"] == dataset_train.preset_helper.excl_params_str
+        val_dataset.configs_dict["params_to_exclude"] == train_dataset.configs_dict["params_to_exclude"]
     ), "the params_to_exclude used for training and validation should be the same."
-    assert dataset_val.num_used_synth_params == dataset_train.num_used_parameters
+    assert val_dataset.num_used_synth_params == train_dataset.num_used_synth_params
     for attr in ["render_duration_in_sec", "midi_note", "midi_velocity", "midi_duration_in_sec"]:
-        assert dataset_val.configs_dict[attr] == getattr(
-            dataset_train, attr
-        ), f"the {attr} used for training and validation should be the same: {getattr(dataset_train, attr)} != {dataset_val.configs_dict[attr]}"
+        assert (
+            val_dataset.configs_dict[attr] == train_dataset.configs_dict[attr]
+        ), f"the {attr} used for training and validation should be the same: {train_dataset.configs_dict[attr]} != {val_dataset.configs_dict[attr]}"

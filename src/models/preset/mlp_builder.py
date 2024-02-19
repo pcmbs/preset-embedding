@@ -2,12 +2,11 @@ from typing import Dict, Optional
 
 import torch
 from torch import nn
-from models.preset.block_layers import SelfNormalizingBlock, BatchNormReLUBlock
-from models.preset.embedding_layers import RawParameters
+from models.preset.block_layers import SelfNormalizingBlock, BatchNormReLUBlock, LayerNormGELUBlock
+from models.preset.embedding_layers import RawParameters, OneHotEncoding
 from utils.synth import PresetHelper
 
 # TODO: all without Dropout if one-epoch learning
-# TODO: split blocks in synth-specific and synth-independent
 
 # TODO: implement
 # inspired from Mixer MLP: https://arxiv.org/pdf/2105.01601.pdf
@@ -115,3 +114,70 @@ def mlp_relu_raw(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn
         block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
         embedding_kwargs={"preset_helper": preset_helper},
     )
+
+
+def mlp_relu_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
+    """
+    MLP with BatchNorm+ReLU blocks and and One-Hot encoded categorical synthesizer parameters.
+    """
+    return MlpBuilder(
+        out_features=out_features,
+        embedding_layer=OneHotEncoding,
+        block_layer=BatchNormReLUBlock,
+        hidden_features=kwargs.get("hidden_features", 1024),
+        num_blocks=kwargs.get("num_blocks", 2),
+        block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
+        embedding_kwargs={"preset_helper": preset_helper},
+    )
+
+
+def mlp_gelu_raw(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
+    """
+    MLP with LazerNorm+GeLU blocks and and raw parameter values in range [0,1].
+    """
+    return MlpBuilder(
+        out_features=out_features,
+        embedding_layer=RawParameters,
+        block_layer=LayerNormGELUBlock,
+        hidden_features=kwargs.get("hidden_features", 1024),
+        num_blocks=kwargs.get("num_blocks", 2),
+        block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
+        embedding_kwargs={"preset_helper": preset_helper},
+    )
+
+
+def mlp_gelu_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
+    """
+    MLP with LayerNorm+GeLU blocks and and One-Hot encoded categorical synthesizer parameters.
+    """
+    return MlpBuilder(
+        out_features=out_features,
+        embedding_layer=OneHotEncoding,
+        block_layer=LayerNormGELUBlock,
+        hidden_features=kwargs.get("hidden_features", 1024),
+        num_blocks=kwargs.get("num_blocks", 2),
+        block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
+        embedding_kwargs={"preset_helper": preset_helper},
+    )
+
+
+if __name__ == "__main__":
+
+    PARAMETERS_TO_EXCLUDE_STR = (
+        "master_volume",
+        "voices",
+        "lfo_1_sync",
+        "lfo_1_keytrigger",
+        "lfo_2_sync",
+        "lfo_2_keytrigger",
+        "envelope*",
+        "portamento*",
+        "pitchwheel*",
+        "delay*",
+    )
+
+    p_helper = PresetHelper("tal_noisemaker", PARAMETERS_TO_EXCLUDE_STR)
+    model = mlp_gelu_oh(192, p_helper)
+    print(model)
+    print(sum(p.numel() for p in model.parameters()))
+    print("")

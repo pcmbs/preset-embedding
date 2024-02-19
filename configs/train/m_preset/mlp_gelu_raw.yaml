@@ -1,9 +1,9 @@
 cfg:
-  _target_: models.preset.mlp_relu_raw
+  _target_: models.preset.mlp_gelu_raw
   # out_features: passed by the audio model at runtime
-  hidden_features: 1536
+  hidden_features: 1024
   num_blocks: 2
   block_kwargs: 
     dropout_p: 0.0
 
-name: mlp_relu_raw
+name: mlp_gelu_raw

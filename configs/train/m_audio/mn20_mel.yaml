@@ -1,4 +1,0 @@
-cfg:
-  _target_: models.audio.mn20_mel
-
-name: mn20_mel

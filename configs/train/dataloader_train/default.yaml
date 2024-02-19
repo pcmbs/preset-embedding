@@ -1,5 +1,0 @@
-batch_size: 64
-num_workers: 8
-shuffle: ??? # depends on base_{iter, epoch} experiments
-pin_memory: False
-drop_last: False

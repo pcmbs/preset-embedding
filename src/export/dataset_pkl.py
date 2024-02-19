@@ -35,14 +35,14 @@ RESUME_STATE_FILE = "resume_state.pkl"
 
 # flag to track if keyboard interrupt has been detected
 # which is used to stop export at the end of the current batch.
-INTERRUPTED = False
+is_interrupted = False  # pylint: disable=C0103
 
 
 def graceful_shutdown(signum, frame) -> None:
     """Handler for signal to interrupt the export process."""
-    global INTERRUPTED  # pylint: disable=W0603
+    global is_interrupted  # pylint: disable=W0603
     print(f"Received signal {signum}, the export will be aborted at the end of the current iteration...")
-    INTERRUPTED = True
+    is_interrupted = True
 
 
 log = logging.getLogger(__name__)
@@ -174,7 +174,7 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
                     sample.T,
                 )
 
-        if INTERRUPTED:
+        if is_interrupted:
             new_starting_index = start_index + slice_end
             log.info(
                 f"Finished generating samples for the current iteration "
@@ -183,7 +183,7 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
             )
             break
 
-    if INTERRUPTED:
+    if is_interrupted:
         log.info("Saving resume_state.pkl file...")
         with open(Path.cwd() / "resume_state.pkl", "wb") as f:
             saved_data = {

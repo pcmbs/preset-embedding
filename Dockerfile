@@ -55,7 +55,5 @@ COPY --chown=$UNAME:$UNAME . .
 # install local packages
 RUN /opt/conda/bin/pip install -e .
 
-# During debugging, this entry point will be overridden. For more information, please refer to https://aka.ms/vscode-docker-python-debug
-# ENTRYPOINT ["python"]
-# CMD ["src/train.py"]
+# During debugging, this entry point will be overridden.
 CMD ["bash"]

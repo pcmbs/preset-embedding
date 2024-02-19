@@ -1,4 +1,0 @@
-cfg:
-  _target_: models.audio.mn04_mel 
-
-name: mn04_mel

@@ -1,3 +1,4 @@
+# pylint: disable=W0212,C0207
 """
 Script to run HPO for the preset embedding framework.
 
@@ -39,13 +40,18 @@ from utils.synth import PresetHelper
 
 log = RankedLogger(__name__, rank_zero_only=True)
 
+# For interrupting the study if a signal is received
+is_interrupted = False  # pylint: disable=C0103
+
 
 # Define a signal handler function for SIGSTP
 def sigstp_handler(study: optuna.study.Study, signal, frame) -> None:
     """Handler for SIGSTP signal, aborts the current optuna study."""
     # Abort the study
-    log.info("Ctrl+Z detected, the study will be aborted at the end of the current trial...")
+    log.info(f"Signal {signal} detected, the study will be aborted at the end of the current trial...")
     study.stop()
+    global is_interrupted  # pylint: disable=W0603
+    is_interrupted = True
 
 
 # Function to register signal handler with additional arguments
@@ -54,11 +60,10 @@ def register_signal_handler_with_args(signal_num, handler_func, *args):
     signal.signal(signal_num, lambda signal, frame: handler_func(*args, signal, frame))
 
 
-def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
+def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> float:
     """Objective function for optuna HPO."""
     # set RNG seed for reproducibility
     L.seed_everything(cfg.seed, workers=True)
-    trial.set_user_attr("seed", cfg.seed)
 
     # Sample hyperparameter values if required:
     hps = {}
@@ -70,14 +75,12 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
     train_loader = DataLoader(
         train_dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers
     )
-    trial.set_user_attr("dataset/train", train_dataset.path_to_dataset.stem)
 
     # instantiate validation Dataset & DataLoader
     val_dataset = SynthDatasetPkl(cfg.path_to_val_dataset, mmap=False)
     val_loader = DataLoader(
         val_dataset, batch_size=cfg.num_ranks_mrr, num_workers=cfg.num_workers, shuffle=False
     )
-    trial.set_user_attr("dataset/val", val_dataset.path_to_dataset.stem)
 
     # instantiate PresetHelper
     preset_helper = PresetHelper(
@@ -93,8 +96,6 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
         num_blocks=hps["num_blocks"],
         hidden_features=hps["hidden_features"],
     )
-    trial.set_user_attr("m_preset/num_params", preset_encoder.num_parameters)
-    trial.set_user_attr("m_preset/name", cfg.m_preset.name)
 
     # instantiate optimizer, lr_scheduler, and scheduler_config
     beta1 = hps.get("beta1", 0.9)
@@ -106,8 +107,8 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
         hydra.utils.instantiate(
             cfg.lr_scheduler,
             total_steps=np.ceil(len(train_dataset) / cfg.batch_size),
-            milestone=hps["milestones"],
-            final_lr=hps["learning_rate_min"],
+            milestone=hps["milestone"],
+            final_lr=hps["min_lr"],
         )
         if cfg.get("lr_scheduler")
         else None
@@ -121,7 +122,7 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
         preset_encoder=preset_encoder,
         loss=nn.L1Loss(),
         optimizer=optimizer,
-        lr=hps["learning_rate"],
+        lr=hps["base_lr"],
         scheduler=lr_scheduler,
         scheduler_config=scheduler_config,
     )
@@ -149,44 +150,63 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig) -> float:
     # get metric to optimize's value (e.g., MRR score)
     metric_value = trainer.callback_metrics[cfg.metric_to_optimize].item()
 
+    # set user attributes
+    trial.set_user_attr("seed", cfg.seed)
+    trial.set_user_attr("dataset/train", train_dataset.path_to_dataset.stem)
+    trial.set_user_attr("dataset/val", val_dataset.path_to_dataset.stem)
+    trial.set_user_attr("m_preset/num_params", preset_encoder.num_parameters)
+    trial.set_user_attr("m_preset/name", cfg.m_preset.name)
+    trial.set_user_attr(
+        "sampler", cfg.sampler.get("name_startup_sampler") if is_startup else cfg.sampler.name
+    )
+
     if logger:
         # log hyperparameters, seed, and dataset refs
         # log sampler and pruner config
         sp_dict = {"sampler": {}, "pruner": {}}
         for name, d in sp_dict.items():
             tmp_dict = OmegaConf.to_container(cfg[name], resolve=True)
-            d["name"] = tmp_dict.get("name")
-            for param, value in tmp_dict["cfg"].items():
+            d["name"] = (
+                tmp_dict.get("name_startup_sampler")
+                if is_startup and name == "sampler"
+                else tmp_dict.get("name")
+            )
+            cfg_key = f"cfg{'_startup' if is_startup and name == 'sampler' else ''}"
+            for param, value in tmp_dict[cfg_key].items():
                 if param != "_target_":
                     d[f"{param}"] = value
         trainer.logger.log_hyperparams({"hps": hps, "misc": trial.user_attrs, **sp_dict})
         # terminate wandb run
         wandb.finish()
 
+    # Abort the study if loss diverges
+    if trainer.callback_metrics["train/loss"].item() > 10:
+        log.info("Trial aborted due to high loss")
+        raise optuna.TrialPruned
+
     return metric_value
 
 
 @hydra.main(version_base="1.3", config_path="../../configs/hpo", config_name="hpo.yaml")
 def hpo(cfg: DictConfig) -> None:
-    """Main function for HPO. Config is defined in `configs/hpo/hpo.yaml`."""
+    """Main function for HPO. Config defined in `configs/hpo/hpo.yaml`."""
     # Add stream handler of stdout to show the messages
     optuna.logging.enable_propagation()  # send messages to the root logger
+    optuna.logging.disable_default_handler()  # prevent showing messages twice
 
     study_name = cfg.study_name  # Unique identifier of the study.
 
-    if (Path.cwd() / f"{study_name}.db").exists():
-        log.info(f"Study {study_name} already exists, resuming...")
-    else:
-        log.info(f"Starting new study with name {study_name}")
-
     storage_name = f"sqlite:///{study_name}.db"
 
-    # load sammpler if exists else create
+    # load sampler if exists else create
     if (Path.cwd() / "optuna_sampler.pkl").exists():
         log.info(f"Loading sampler from {Path.cwd() / 'optuna_sampler.pkl'}")
         sampler = torch.load(Path.cwd() / "optuna_sampler.pkl")
     else:
-        sampler = hydra.utils.instantiate(cfg.sampler.cfg)
+        if cfg.sampler.get("cfg_startup"):
+            sampler = hydra.utils.instantiate(cfg.sampler.cfg_startup)
+        else:
+            sampler = hydra.utils.instantiate(cfg.sampler.cfg)
 
     pruner = hydra.utils.instantiate(cfg.pruner.cfg)
 
@@ -199,25 +219,51 @@ def hpo(cfg: DictConfig) -> None:
         direction=cfg.direction,
     )
 
-    # Register the signal handler for SIGSTP with additional study argument
+    # Register the signal handler for different signals with additional study argument
     register_signal_handler_with_args(signal.SIGTSTP, sigstp_handler, study)
+    register_signal_handler_with_args(signal.SIGUSR1, sigstp_handler, study)  # for HPC
+    register_signal_handler_with_args(signal.SIGTERM, sigstp_handler, study)  # for HPC
 
-    # Start HPO
-    study.optimize(
-        lambda trial: objective(trial, cfg),
-        n_trials=cfg.num_trials - len(study.trials),
-        timeout=cfg.timeout,
-    )
+    # Start startup trials if needed
+    num_startup_trials = cfg.sampler.get("n_startup_trials", 0)
+
+    if 0 <= len(study.trials) < num_startup_trials:
+        log.info(f"Starting HPO startup with {study.sampler}...")
+        log.info(f"Number of remaining startup trial: {num_startup_trials - len(study.trials)}")
+        study.optimize(
+            lambda trial: objective(trial, cfg, is_startup=True),
+            n_trials=num_startup_trials - len(study.trials),
+        )
+        if not is_interrupted:
+            log.info("Startup trials finished.")
+
+    # Start non-startup trials except if study was aborted by user
+    if not is_interrupted:
+
+        # create sampler if the study was aborted exactly at the end of the startup trials
+        # i.e., the pickled sampler is the one use during startup trials and need to be replaced
+        if str(type(study.sampler)).split(".")[-1][:-2] != str(cfg.sampler.cfg._target_).split(".")[-1]:
+            study.sampler = hydra.utils.instantiate(cfg.sampler.cfg)
+
+        log.info(
+            f"Starting HPO with {study.sampler}...\n"
+            f"Number of remaining trials: {cfg.num_trials - len(study.trials)}"
+        )
+
+        study.optimize(
+            lambda trial: objective(trial, cfg, is_startup=False),
+            n_trials=cfg.num_trials - len(study.trials),
+        )
 
     log.info(f"Number of finished trials: {len(study.trials)}")
 
     log.info("Best trial:")
     trial = study.best_trial
-    log.info(f"  Value: {trial.value}")
+    log.info(f" Value: {trial.value}")
 
-    log.info("  Params: ")
+    log.info(" Params: ")
     for key, value in trial.params.items():
-        log.info(f"    {key}: {value}")
+        log.info(f"  {key}: {value}")
 
     # Save the sampler to be loaded later if needed.
     log.info("Saving sampler...")
@@ -234,6 +280,6 @@ if __name__ == "__main__":
 
     # gettrace = getattr(sys, "gettrace", None)
     # if gettrace():
-    #     sys.argv = args
+    #   sys.argv = args
 
     hpo()  # pylint: disable=no-value-for-parameter

@@ -1,0 +1,8 @@
+cfg:
+  _target_: models.preset.mlp_gelu_oh
+  # hidden_features: 1024 # passes at runtime by optuna
+  # num_blocks: 2 # passes at runtime by optuna
+  block_kwargs: 
+    dropout_p: 0.0
+
+name: mlp_gelu_oh

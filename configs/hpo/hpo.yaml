@@ -3,8 +3,8 @@
 defaults:
   - _self_
   - m_preset: mlp_relu_raw
-  - search_space: mlp_relu_raw_v1
-  - sampler: tpe
+  - search_space: mlp_all
+  - sampler: qcm-tpe
   - pruner: nop
   - wandb: default
 
@@ -21,16 +21,14 @@ seed: 42
 
 ############ Optuna configs
 # number of trials to run
-num_trials: 100
+# if sampler is qcm-tpe, then the number of TPE trials is num_trials-sampler.num_startup_trials
+num_trials: 203
 
 # in which direction the objective should be optimized (minimize or maximize)
 direction: maximize
 
 # metric to optimize (for optuna lightning callback)
 metric_to_optimize: val/mrr
-
-# Stop study after the given number of second(s). Can be used when performing HPO on HPC or GPU providers.
-timeout: null
 
 
 ############ Training configs

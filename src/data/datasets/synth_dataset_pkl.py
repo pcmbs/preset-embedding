@@ -40,11 +40,20 @@ class SynthDatasetPkl(Dataset):
         with open(self.path_to_dataset / "synth_parameters_description.pkl", "rb") as f:
             self._synth_params_descr = torch.load(f)
 
-        with open(self.path_to_dataset / "synth_params.pkl", "rb") as f:
-            self.synth_params = torch.load(f, map_location="cpu", mmap=mmap)
+        # with open(self.path_to_dataset / "synth_params.pkl", "rb") as f:
+        #     self.synth_params = torch.load(f, map_location="cpu", mmap=mmap)
 
-        with open(self.path_to_dataset / "audio_embeddings.pkl", "rb") as f:
-            self.audio_embeddings = torch.load(f, map_location="cpu", mmap=mmap)
+        # with open(self.path_to_dataset / "audio_embeddings.pkl", "rb") as f:
+        #     self.audio_embeddings = torch.load(f, map_location="cpu", mmap=mmap)
+
+        # Avoid torch Path mmap error:
+        # "ValueError: f must be a string filename in order to use mmap argument"
+        self.audio_embeddings = torch.load(
+            str(self.path_to_dataset / "audio_embeddings.pkl"), map_location="cpu", mmap=mmap
+        )
+        self.synth_params = torch.load(
+            str(self.path_to_dataset / "synth_params.pkl"), map_location="cpu", mmap=mmap
+        )
 
         assert len(self.audio_embeddings) == len(self.synth_params)
 
@@ -55,6 +64,10 @@ class SynthDatasetPkl(Dataset):
     @property
     def embedding_dim(self) -> int:
         return self.audio_embeddings.shape[1]
+
+    @property
+    def name(self) -> str:
+        return self.path_to_dataset.stem
 
     @property
     def synth_name(self) -> str:

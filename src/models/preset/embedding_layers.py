@@ -85,8 +85,6 @@ class OneHotEncoding(nn.Module):
         """
         super().__init__()
 
-        self.params_to_encode = {}
-
         # used numerical and binary parameters indices
         self.non_cat_params = preset_helper.used_num_params_idx + preset_helper.used_bin_params_idx
         self.num_non_cat_params = len(self.non_cat_params)
@@ -122,8 +120,6 @@ class OneHotEncoding(nn.Module):
             cat_emb = F.one_hot(x[..., idx].to(torch.long), num_classes=card).view(x.shape[0], -1)
             emb[..., emb_index : emb_index + cat_emb.shape[1]] = cat_emb
             emb_index += cat_emb.shape[1]
-
-        # TODO: tests for this
 
         return emb
 

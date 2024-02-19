@@ -1,19 +1,41 @@
+##### Architecture HPs
 # number of blocks for the preset encoder
 num_blocks: 2
 
 # number of hidden features for the preset encoder
 hidden_features: 1536
 
-# learning rate
-learning_rate: 
+
+##### scheduler HPs
+# switch from constant to cosine decay
+milestone:
+  type: int
+  kwargs:
+    name: milestone
+    low: 0
+    high: 1500
+
+# starting learning rate
+base_lr: 
   type: float
   kwargs:
-    name: learning_rate
+    name: base_lr
     low: 0.0001
     high: 0.01
     log: true
 
-# Adam hyperparameters 
+# scheduler final lr
+min_lr:
+  type: float
+  kwargs:
+    name: min_lr
+    low: 0.0000000001
+    high: 0.01
+    log: true
+
+
+##### Adam HPs
+# Exp decay rate for 1st moment estimate
 beta1:
   type: float
   kwargs:
@@ -22,6 +44,7 @@ beta1:
     high: 0.999
     step: 0.001
 
+# Exp decay rate for 1st moment estimate
 beta2:
   type: float
   kwargs:
@@ -30,6 +53,7 @@ beta2:
     high: 0.999
     step: 0.001
 
+# epsilon for numerical stability
 eps:
   type: float
   kwargs:
@@ -38,19 +62,5 @@ eps:
     high: 0.0001
     log: true
 
-# scheduler hyperparameters
-milestones:
-  type: int
-  kwargs:
-    name: milestones
-    low: 0
-    high: 1500
 
-learning_rate_min:
-  type: float
-  kwargs:
-    name: final_lr
-    low: 0.0000000001
-    high: 0.01
-    log: true
 

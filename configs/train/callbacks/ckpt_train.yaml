@@ -1,0 +1,18 @@
+# https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html 
+
+# keep k-top on train loss (L1)
+
+ckpt_train:
+  _target_: lightning.pytorch.callbacks.ModelCheckpoint
+  dirpath: ${paths.output_dir}/checkpoints # directory to save the model file
+  filename: ${m_preset.name}_${train_dataset.name}_e{epoch}_l1{train/loss:.4f}
+  auto_insert_metric_name: False # when True, the checkpoints filenames will contain the metric name
+  
+  monitor: "train/loss" # name of the logged metric which determines when model is improving
+  mode: min # max/min means higher/lower metric value is better
+
+  save_last: null # additionally always save an exact copy of the last checkpoint to a file last.ckpt
+  save_top_k: 2 # save k best models (determined by above metric)
+
+  every_n_epochs: 1 # number of epochs between checkpoints
+  save_on_train_epoch_end: True # run checkpointing at the end of the training epoch
