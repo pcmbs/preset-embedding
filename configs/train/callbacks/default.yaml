@@ -4,5 +4,6 @@ defaults:
   - ckpt_last
   - ckpt_train
   - ckpt_val
+  - learning_rate_monitor
   - rich_progress_bar
 

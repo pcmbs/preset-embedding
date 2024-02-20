@@ -78,19 +78,21 @@ def log_hyperparameters(object_dict: Dict[str, Any]) -> None:
     # solver related hyperparameters
     hparams["solver/loss"] = cfg["solver"]["loss"]["_target_"].split(".")[-1]
 
+    hparams["solver/lr"] = cfg["solver"]["lr"]
+
     hparams["solver/optim/name"] = cfg["solver"]["optimizer"]["_target_"].split(".")[-1]
     for k, v in cfg["solver"]["optimizer"].items():
         if k not in ["_target_", "_partial_"]:
             hparams[f"solver/optim/{k}"] = v
 
-    if cfg["solver"].get("lr_scheduler"):
-        hparams["solver/sched/name"] = cfg["solver"]["lr_scheduler"]["_target_"].split(".")[-1]
-        for k, v in cfg["solver"]["lr_scheduler"].items():
+    if cfg["solver"].get("scheduler"):
+        hparams["solver/sched/name"] = cfg["solver"]["scheduler"]["_target_"].split(".")[-1]
+        for k, v in cfg["solver"]["scheduler"].items():
             if k not in ["_target_", "_partial_"]:
                 hparams[f"solver/sched/{k}"] = v
 
-    if cfg["solver"].get("lr_scheduler_config"):
-        for k, v in cfg["solver"]["lr_scheduler_config"].items():
+    if cfg["solver"].get("scheduler_config"):
+        for k, v in cfg["solver"]["scheduler_config"].items():
             if k != "monitor":
                 hparams[f"solver/sched/{k}"] = v
 

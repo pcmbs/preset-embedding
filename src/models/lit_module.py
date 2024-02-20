@@ -24,9 +24,9 @@ class PresetEmbeddingLitModule(LightningModule):
     def __init__(
         self,
         preset_encoder: nn.Module,
-        loss: nn.Module,
-        optimizer: torch.optim.Optimizer,
-        lr: float,
+        loss: nn.Module = None,
+        optimizer: torch.optim.Optimizer = None,
+        lr: float = None,
         scheduler: Optional[torch.optim.lr_scheduler.LRScheduler] = None,
         scheduler_config: Optional[Dict[str, Any]] = None,
         wandb_watch_args: Optional[Dict[str, Any]] = None,

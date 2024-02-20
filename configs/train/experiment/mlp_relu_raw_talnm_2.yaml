@@ -7,25 +7,25 @@ defaults:
 
 
 ########## hyperparameters 
-# refined solver HPs for extended number of training steps based on the 3 best HPO trials
+# 2nd Best trial from QMC+TPE HPO
 
 m_preset:
   cfg:
-    hidden_features: 1536
+    hidden_features: 2304
     num_blocks: 2
 
 solver:
-  lr: 4.28e-3
+  lr: 2.64e-03
   optimizer:
     betas:
-      - 0.813
-      - 0.918
-    eps: 7.74e-07
+      - 0.829
+      - 0.924
+    eps: 2.97e-8
 
   scheduler:
     total_steps: 20000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
-    milestone: 14500 # can also be set to 7500
-    final_lr: 4.28e-4 # following the 0.10 heuristic
+    milestone: 1335 # keep milestone from HPO (although 1953 steps, let see)
+    final_lr: 8.35e-9
 
 
 ########## training setup

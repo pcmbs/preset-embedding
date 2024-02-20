@@ -11,8 +11,8 @@ loss:
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  weight_decay: 0.0
 
+# Learning Rate
 lr: 0.007
 
 # LR scheduler

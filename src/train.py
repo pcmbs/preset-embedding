@@ -9,7 +9,6 @@ from typing import Any, Dict, List
 
 import hydra
 import lightning as L
-import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from lightning import Callback, LightningModule, Trainer
@@ -24,9 +23,6 @@ from utils.synth.preset_helper import PresetHelper
 
 # logger for this file
 log = RankedLogger(__name__, rank_zero_only=True)
-
-# TODO: log stuff related to validation dataset and return appropriate metrics
-# val_dataset_path to be overwriten un experiment config files
 
 
 def train(cfg: DictConfig) -> Dict[str, Any]:
@@ -66,7 +62,7 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
     )
     check_val_dataset(train_dataset, val_dataset)
 
-    log.info(f"Instantiating Preset Helper for synth {train_dataset.synth_name} and excluded params\n")
+    log.info(f"Instantiating Preset Helper for synth {train_dataset.synth_name} and excluded params:")
     log.info(f"{train_dataset.configs_dict['params_to_exclude']}")
     preset_helper = PresetHelper(
         synth_name=train_dataset.synth_name,

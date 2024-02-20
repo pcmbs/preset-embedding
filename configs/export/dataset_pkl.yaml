@@ -54,7 +54,8 @@ batch_size: 128
 num_workers: 8
 
 # can be useful to check the target audio for the MRR evaluation since those are taken from the first batch
-export_audio: False
+# export the first i samples if int, set to -1 to export all, and set to 0 to skip
+export_audio: 0
 
 ############ Audio model settings
 # pre-trained audio model used as feature extractor to generate the labels

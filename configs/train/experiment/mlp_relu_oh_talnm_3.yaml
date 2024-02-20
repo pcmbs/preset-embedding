@@ -3,29 +3,29 @@
 defaults:
   - override /train_dataset: tal_noisemaker_mn04_v1
   - override /val_dataset: tal_noisemaker_mn04_v1
-  - override /m_preset: mlp_relu_raw
+  - override /m_preset: mlp_relu_oh
 
 
 ########## hyperparameters 
-# refined solver HPs for extended number of training steps based on the 3 best HPO trials
+# 3rd Best trial from QMC+TPE HPO
 
 m_preset:
   cfg:
-    hidden_features: 1536
+    hidden_features: 3840
     num_blocks: 2
 
 solver:
-  lr: 4.28e-3
+  lr: 6.32e-3
   optimizer:
     betas:
-      - 0.813
-      - 0.918
-    eps: 7.74e-07
+      - 0.802
+      - 0.939
+    eps: 5.39e-10
 
   scheduler:
     total_steps: 20000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
-    milestone: 14500 # can also be set to 7500
-    final_lr: 4.28e-4 # following the 0.10 heuristic
+    milestone: 1366 # keep milestone from HPO (although 1953 steps, let see)
+    final_lr: 8.19e-8
 
 
 ########## training setup

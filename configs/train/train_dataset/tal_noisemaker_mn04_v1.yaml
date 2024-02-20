@@ -3,7 +3,7 @@ path: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=10240000_seed=500
 
 loader:
   batch_size: 512
-  num_workers: 0 # reading from mmaped files doesn't worth the overhead
+  num_workers: 8
   shuffle: True
   pin_memory: False
   drop_last: False

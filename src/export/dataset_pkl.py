@@ -100,7 +100,7 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
         if start_index != 0 or end_index != cfg.dataset_size:
             is_subset = True
 
-        if cfg.export_audio:
+        if cfg.export_audio != 0:
             audio_path = Path.cwd() / "audio"
             audio_path.mkdir(parents=True, exist_ok=True)
 
@@ -165,14 +165,15 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
         audio_embeddings[slice_start:slice_end] = audio_emb.cpu()
         synth_params[slice_start:slice_end] = params.cpu()
 
-        if cfg.export_audio:
+        if (cfg.export_audio > start_index + slice_start) or (cfg.export_audio == -1):
             for j, sample in enumerate(audio):
-                sample = sample.cpu().numpy()
-                wavfile.write(
-                    audio_path / f"{start_index + slice_start+j}.wav",
-                    audio_fe.sample_rate,
-                    sample.T,
-                )
+                if (cfg.export_audio > start_index + slice_start + j) or (cfg.export_audio == -1):
+                    sample = sample.cpu().numpy()
+                    wavfile.write(
+                        audio_path / f"{start_index + slice_start+j}.wav",
+                        audio_fe.sample_rate,
+                        sample.T,
+                    )
 
         if is_interrupted:
             new_starting_index = start_index + slice_end
