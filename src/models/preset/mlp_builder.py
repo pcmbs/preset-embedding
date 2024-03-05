@@ -6,21 +6,6 @@ from models.preset.block_layers import SelfNormalizingBlock, BatchNormReLUBlock,
 from models.preset.embedding_layers import RawParameters, OneHotEncoding
 from utils.synth import PresetHelper
 
-# TODO: all without Dropout if one-epoch learning
-
-# TODO: implement
-# inspired from Mixer MLP: https://arxiv.org/pdf/2105.01601.pdf
-# → https://github.com/rrmina/MLP-Mixer-pytorch/blob/master/model.py
-
-# inspired from Gated MLP: https://arxiv.org/pdf/2105.08050.pdf
-# → https://github.com/jaketae/g-mlp
-
-# check https://github.com/huggingface/pytorch-image-models/blob/main/timm/models/mlp_mixer.py
-# for both Mixer and Gated MLP initialization
-
-# could also try variant in https://github.com/huggingface/pytorch-image-models/blob/main/timm/layers/mlp.py
-
-
 ########## MLP Builder Class Definition
 
 

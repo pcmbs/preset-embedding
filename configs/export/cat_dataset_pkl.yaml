@@ -1,3 +1,5 @@
+# @package _global_
+
 ############ Export path Settings
 # Path relative to the project root where the dataset will be exported
 export_relative_path: data/datasets

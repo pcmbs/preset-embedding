@@ -1,0 +1,17 @@
+### PresetHelper settings
+
+# synthesizer used to generate the dataset
+name: tal_noisemaker
+
+# synthesizer parameters to exclude when generating presets
+parameters_to_exclude_str: 
+  - master_volume
+  - voices
+  - lfo_1_sync
+  - lfo_1_keytrigger
+  - lfo_2_sync
+  - lfo_2_keytrigger
+  - envelope*
+  - portamento*
+  - pitchwheel*
+  - delay*

@@ -34,7 +34,7 @@ class DummyModel(LightningModule):
         self.model = nn.Sequential(
             nn.Linear(in_features, 4 * out_features),
             nn.ReLU(),
-            nn.Linear(4 * in_features, 4 * out_features),
+            nn.Linear(4 * out_features, 4 * out_features),
             nn.ReLU(),
             nn.Linear(4 * out_features, out_features),
         )

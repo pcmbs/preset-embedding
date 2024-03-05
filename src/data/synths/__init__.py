@@ -1,1 +1,1 @@
-from . import tal_noisemaker
+from . import tal_noisemaker, dexed, diva

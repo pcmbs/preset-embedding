@@ -49,11 +49,8 @@ class RawParameters(nn.Module):
 
         super().__init__()
         self._embedding_dim = preset_helper.num_used_params
-
-        self.cat_params = [
-            (torch.tensor(cat_values, dtype=torch.float32), torch.tensor(indices, dtype=torch.long))
-            for cat_values, indices in preset_helper.cat_params_val_dict.items()
-        ]
+        self._grouped_used_params = preset_helper.grouped_used_params
+        self.cat_params = self._group_cat_params_per_values()
 
     @property
     def embedding_dim(self) -> int:
@@ -72,6 +69,21 @@ class RawParameters(nn.Module):
             x[..., indices] = cat_values[x[..., indices].to(torch.long)]
         return x
 
+    def _group_cat_params_per_values(self):
+        cat_params_val_dict = {}
+        for (cat_values, _), indices in self._grouped_used_params["discrete"]["cat"].items():
+            # create copy of the indices list to not modify the original ones
+            indices = indices.copy()
+            if cat_values in cat_params_val_dict:
+                cat_params_val_dict[cat_values] += indices
+            else:
+                cat_params_val_dict[cat_values] = indices
+
+        return [
+            (torch.tensor(cat_values, dtype=torch.float32), torch.tensor(indices, dtype=torch.long))
+            for cat_values, indices in cat_params_val_dict.items()
+        ]
+
 
 class OneHotEncoding(nn.Module):
     """One-hot encoding of categorical parameters."""
@@ -85,14 +97,13 @@ class OneHotEncoding(nn.Module):
         """
         super().__init__()
 
+        self._grouped_used_params = preset_helper.grouped_used_params
+
         # used numerical and binary parameters indices
-        self.non_cat_params = preset_helper.used_num_params_idx + preset_helper.used_bin_params_idx
+        self.non_cat_params = preset_helper.used_noncat_params_idx
         self.num_non_cat_params = len(self.non_cat_params)
 
-        self.cat_params = [
-            (cat_card, torch.tensor(indices, dtype=torch.long))
-            for cat_card, indices in preset_helper.cat_params_card_dict.items()
-        ]
+        self.cat_params = self._group_cat_params_per_cardinality()
 
         self._embedding_dim = int(
             sum(card * len(indices) for card, indices in self.cat_params) + self.num_non_cat_params
@@ -123,26 +134,87 @@ class OneHotEncoding(nn.Module):
 
         return emb
 
+    def _group_cat_params_per_cardinality(self):
+        cat_params_card_dict = {}
+        for (cat_values, _), indices in self._grouped_used_params["discrete"]["cat"].items():
+            # create copy of the indices list to not modify the original ones
+            indices = indices.copy()
+            num_values = len(cat_values)
+            if num_values in cat_params_card_dict:
+                cat_params_card_dict[num_values] += indices
+            else:
+                cat_params_card_dict[num_values] = indices
+
+        return [
+            (cat_card, torch.tensor(indices, dtype=torch.long))
+            for cat_card, indices in cat_params_card_dict.items()
+        ]
+        # return deepcopy(cat_params_card_dict)
+
 
 if __name__ == "__main__":
     from torch.utils.data import DataLoader
     from data.datasets import SynthDataset
 
+    SYNTH = "tal"
     NUM_SAMPLES = 10
-    PARAMETERS_TO_EXCLUDE_STR = (
-        "master_volume",
-        "voices",
-        "lfo_1_sync",
-        "lfo_1_keytrigger",
-        "lfo_2_sync",
-        "lfo_2_keytrigger",
-        "envelope*",
-        "portamento*",
-        "pitchwheel*",
-        "delay*",
-    )
 
-    p_helper = PresetHelper("tal_noisemaker", PARAMETERS_TO_EXCLUDE_STR)
+    if SYNTH == "tal":
+        PARAMETERS_TO_EXCLUDE_STR = (
+            "master_volume",
+            "voices",
+            "lfo_1_sync",
+            "lfo_1_keytrigger",
+            "lfo_2_sync",
+            "lfo_2_keytrigger",
+            "envelope*",
+            "portamento*",
+            "pitchwheel*",
+            "delay*",
+        )
+
+        p_helper = PresetHelper("tal_noisemaker", PARAMETERS_TO_EXCLUDE_STR)
+
+    if SYNTH == "diva":
+        PARAMETERS_TO_EXCLUDE_STR = (
+            "main:*",
+            "vc:*",
+            "glob:*",
+            "scop:*",
+            "arp:*",
+            "rvb1:*",
+            "dly1:*",
+            "cho2:*",
+            "pha2:*",
+            "rot2:*",
+            "*keyfollow",
+            "*velocity",
+            "env1:model",
+            "env2:model",
+            "*trigger",
+            "*release_on",
+            "env1:quantise",
+            "env2:quantise",
+            "env1:curve",
+            "env2:curve",
+            "lfo1:sync",
+            "lfo2:sync",
+            "lfo1:restart",
+            "lfo2:restart",
+            "mod:rectifysource",
+            "mod:invertsource",
+            "mod:addsource*",
+            "*revision",
+            "vca:pan",
+            "vca:volume",
+            "vca:vca",
+            "vca:panmodulation",
+            "vca:panmoddepth",
+            "vca:mode",
+            "vca:offset",
+        )
+        p_helper = PresetHelper("diva", PARAMETERS_TO_EXCLUDE_STR)
+
     dataset = SynthDataset(p_helper, NUM_SAMPLES, seed_offset=5423)
     loader = DataLoader(dataset, batch_size=2, shuffle=False)
     raw = RawParameters(p_helper)

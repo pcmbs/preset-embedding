@@ -1,16 +1,20 @@
-import numpy as np
-from utils.synth import EmptyParameter, SettingsParameter, SynthParameter
+from utils.synth import SynthParameter
+
+# TODO: add motivation for category weights, modified interval, and excluded params
+
+# TODO: should have made "transpose" a num with cardinality=4 and cat_values=(0.0, 0.5, 0.75, 1.0)
+# instead of cat but was not implemented at this point, same goes for "envelop_speed"... maybe do that later
 
 SYNTH_NAME = "tal_noisemaker"
 
 SYNTH_PARAMETERS = (
-    EmptyParameter(index=0, name="-", default_value=0.5),
+    # SynthParameter(index=0, name="-", type_="num", default_value=0.5),
     SynthParameter(index=1, name="master_volume", type_="num", default_value=0.40800002217292786),
     SynthParameter(index=2, name="filter_type", type_="cat", cardinality=12, default_value=0.0),
     SynthParameter(index=3, name="filter_cutoff", type_="num", default_value=1.0),
     SynthParameter(index=4, name="filter_resonance", type_="num"),
     SynthParameter(index=5, name="filter_keyfollow", type_="num"),
-    SynthParameter(index=6, name="filter_contour", type_="num", symmetric=True),
+    SynthParameter(index=6, name="filter_contour", type_="num"),
     SynthParameter(index=7, name="filter_attack", type_="num"),
     SynthParameter(index=8, name="filter_decay", type_="num"),
     SynthParameter(index=9, name="filter_sustain", type_="num", default_value=1.0),
@@ -22,11 +26,11 @@ SYNTH_PARAMETERS = (
     SynthParameter(index=15, name="osc_1_volume", type_="num", default_value=0.800000011920929),
     SynthParameter(index=16, name="osc_2_volume", type_="num"),
     SynthParameter(index=17, name="osc_3_volume", type_="num", default_value=0.800000011920929),
-    SynthParameter(index=18, name="osc_mastertune", type_="num", default_value=0.5, symmetric=True),
-    SynthParameter(index=19, name="osc_1_tune", type_="num", default_value=0.25, symmetric=True),
-    SynthParameter(index=20, name="osc_2_tune", type_="num", default_value=0.5, symmetric=True),
-    SynthParameter(index=21, name="osc_1_fine_tune", type_="num", default_value=0.5, symmetric=True),
-    SynthParameter(index=22, name="osc_2_fine_tune", type_="num", default_value=0.5, symmetric=True),
+    SynthParameter(index=18, name="osc_mastertune", type_="num", default_value=0.5),
+    SynthParameter(index=19, name="osc_1_tune", type_="num", default_value=0.25),
+    SynthParameter(index=20, name="osc_2_tune", type_="num", default_value=0.5),
+    SynthParameter(index=21, name="osc_1_fine_tune", type_="num", default_value=0.5),
+    SynthParameter(index=22, name="osc_2_fine_tune", type_="num", default_value=0.5),
     SynthParameter(
         index=23, name="osc_1_waveform", type_="cat", cardinality=3, cat_weights=(0.45, 0.45, 0.1)
     ),
@@ -36,28 +40,27 @@ SYNTH_PARAMETERS = (
     SynthParameter(index=27, name="lfo_2_waveform", type_="cat", cardinality=6, excluded_cat_idx=(4,)),
     SynthParameter(index=28, name="lfo_1_rate", type_="num"),
     SynthParameter(index=29, name="lfo_2_rate", type_="num"),
-    SynthParameter(index=30, name="lfo_1_amount", type_="num", default_value=0.5, symmetric=True),
-    SynthParameter(index=31, name="lfo_2_amount", type_="num", default_value=0.5, symmetric=True),
+    SynthParameter(index=30, name="lfo_1_amount", type_="num", default_value=0.5),
+    SynthParameter(index=31, name="lfo_2_amount", type_="num", default_value=0.5),
     SynthParameter(index=32, name="lfo_1_destination", type_="cat", cardinality=8),
     SynthParameter(index=33, name="lfo_2_destination", type_="cat", cardinality=8),
     SynthParameter(index=34, name="lfo_1_phase", type_="num"),
     SynthParameter(index=35, name="lfo_2_phase", type_="num"),
     SynthParameter(index=36, name="osc_2_fm", type_="num"),
     SynthParameter(index=37, name="osc_2_phase", type_="num"),
-    SynthParameter(index=38, name="osc_1_pw", type_="num", default_value=0.5, symmetric=True),
+    SynthParameter(index=38, name="osc_1_pw", type_="num", default_value=0.5),
     SynthParameter(index=39, name="osc_1_phase", type_="num", default_value=0.5),
-    SynthParameter(
+    SynthParameter(  # TODO: change to num with cardinality=4
         index=40,
         name="transpose",
         type_="cat",
         default_value=0.5,
-        symmetric=True,
         cardinality=4,
         cat_values=(0.0, 0.5, 0.75, 1.0),
     ),
     SynthParameter(index=41, name="free_ad_attack", type_="num"),
     SynthParameter(index=42, name="free_ad_decay", type_="num"),
-    SynthParameter(index=43, name="free_ad_amount", type_="num", symmetric=True),
+    SynthParameter(index=43, name="free_ad_amount", type_="num"),
     SynthParameter(index=44, name="free_ad_destination", type_="cat", cardinality=6),
     SynthParameter(index=45, name="lfo_1_sync", type_="bin"),
     SynthParameter(index=46, name="lfo_1_keytrigger", type_="bin", default_value=1.0),
@@ -83,10 +86,10 @@ SYNTH_PARAMETERS = (
     SynthParameter(index=66, name="master_high_pass", type_="num"),
     SynthParameter(index=67, name="master_detune", type_="num"),
     SynthParameter(index=68, name="vintage_noise", type_="num"),
-    SettingsParameter(index=69, name="panic"),
-    SettingsParameter(index=70, name="midi_learn"),
+    # SynthParameter(index=69, name="panic", type_="bin"),
+    # SynthParameter(index=70, name="midi_learn", type_="bin"),
     SynthParameter(index=71, name="envelope_destination", type_="cat", cardinality=8),
-    SynthParameter(index=72, name="envelope_speed", type_="cat", cardinality=6),
+    SynthParameter(index=72, name="envelope_speed", type_="cat", cardinality=6),  # TODO: changege to num
     SynthParameter(index=73, name="envelope_amount", type_="num"),
     SynthParameter(index=74, name="envelope_one_shot_mode", type_="bin"),
     SynthParameter(index=75, name="envelope_fix_tempo", type_="bin"),
@@ -100,9 +103,6 @@ SYNTH_PARAMETERS = (
     SynthParameter(index=83, name="delay_high_shelf", type_="num"),
     SynthParameter(index=84, name="delay_low_shelf", type_="num"),
     SynthParameter(index=85, name="delay_feedback", type_="num", default_value=0.5),
-    SettingsParameter(index=86, name="midi_clear"),
-    SettingsParameter(index=87, name="midi_lock"),
-    SettingsParameter(index=88, name="bypass"),
 )
 
 if __name__ == "__main__":

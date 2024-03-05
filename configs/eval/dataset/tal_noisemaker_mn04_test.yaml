@@ -1,0 +1,4 @@
+# enter the path to the pkl dataset folder for the MMR validation
+path: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=131072_seed=401_pkl_train-val-v1
+
+name: tal_noisemaker_mn04_test

@@ -1,0 +1,42 @@
+### PresetHelper settings
+
+# synthesizer used to generate the dataset
+name: diva
+
+# synthesizer parameters to exclude when generating presets
+parameters_to_exclude_str: 
+  - "main:*"
+  - "vc:*"
+  - "glob:*"
+  - "scop:*"
+  - "arp:*"
+  - "rvb1:*"
+  - "dly1:*"
+  - "cho2:*"
+  - "pha2:*"
+  - "rot2:*"
+  - "*keyfollow"
+  - "*velocity"
+  - "env1:model"
+  - "env2:model"
+  - "*trigger"
+  - "*release_on"
+  - "env1:quantise"
+  - "env2:quantise"
+  - "env1:curve"
+  - "env2:curve"
+  - "lfo1:sync"
+  - "lfo2:sync"
+  - "lfo1:restart"
+  - "lfo2:restart"
+  - "mod:rectifysource"
+  - "mod:invertsource"
+  - "mod:addsource*"
+  - "*revision"
+  - "vca:pan"
+  - "vca:volume"
+  - "vca:vca"
+  - "vca:panmodulation"
+  - "vca:panmoddepth"
+  - "vca:mode"
+  - "vca:offset"

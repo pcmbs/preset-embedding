@@ -1,28 +1,15 @@
+# @package _global_
+
+defaults:
+  - synth: tal_noisemaker
+
+
 ############ Export path Settings
 # Path relative to the project root where the dataset will be exported
 export_relative_path: data/datasets
 
 # tag to be appended to the generated folder (must be provided by the user)
 tag: ???
-
-############ Data generation settings
-
-### PresetHelper settings
-# synthesizer used to generate the dataset
-synth: tal_noisemaker
-
-# synthesizer parameters to exclude when generating presets
-parameters_to_exclude_str: 
-  - master_volume
-  - voices
-  - lfo_1_sync
-  - lfo_1_keytrigger
-  - lfo_2_sync
-  - lfo_2_keytrigger
-  - envelope*
-  - portamento*
-  - pitchwheel*
-  - delay*
 
 
 ### SynthDataset settings
@@ -68,7 +55,7 @@ root_dir: ${oc.env:PROJECT_ROOT}
 hydra:
   output_subdir: null
   run:
-    dir: ${root_dir}/${export_relative_path}/${synth}_${audio_fe}_size=${dataset_size}_seed=${seed_offset}_pkl_${tag}
+    dir: ${root_dir}/${export_relative_path}/${synth.name}_${audio_fe}_size=${dataset_size}_seed=${seed_offset}_pkl_${tag}
 
   job: 
     chdir: True

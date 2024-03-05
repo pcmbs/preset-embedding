@@ -48,7 +48,7 @@ def test_raw_params_emb_layer(tal_dataset):
 
     raw_params_emb = emb_layer(params.clone())
     # TODO: refactor that since fn doesnt exist anymore
-    for cat_values, indices in tal_dataset.preset_helper.cat_params_val_dict.items():
+    for (cat_values, _), indices in tal_dataset.preset_helper.grouped_used_params["discrete"]["cat"].items():
         for i in indices:
             for sample, emb in zip(params, raw_params_emb):
                 assert cat_values[int(sample[i])] == emb[i]
@@ -89,7 +89,8 @@ def test_onehot_params_emb_layer(tal_dataset):
 
     offset = emb_layer.num_non_cat_params
 
-    for cat_card, indices in tal_dataset.preset_helper.cat_params_card_dict.items():
+    for (cat_values, _), indices in tal_dataset.preset_helper.grouped_used_params["discrete"]["cat"].items():
+        cat_card = len(cat_values)
         for i in indices:
             for sample, emb in zip(params, onehot_params_emb):
                 assert torch.all(

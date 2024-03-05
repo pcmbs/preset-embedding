@@ -85,6 +85,10 @@ class SynthDataset(Dataset):
         if path_to_plugin is None:
             if preset_helper.synth_name == "tal_noisemaker":
                 path_to_plugin = PLUGINS_FOLDER / "TAL-NoiseMaker.vst3"
+            elif preset_helper.synth_name == "dexed":
+                path_to_plugin = PLUGINS_FOLDER / "Dexed.vst3"
+            elif preset_helper.synth_name == "diva":
+                path_to_plugin = PLUGINS_FOLDER / "Diva.vst3"
             else:
                 raise NotImplementedError()
         if isinstance(path_to_plugin, Path):
@@ -143,7 +147,7 @@ class SynthDataset(Dataset):
         rms_out = self.rms_range[0] - 1.0  # get in the loop
 
         # generate random preset until the audio rms value is in an acceptable range
-        while (rms_out < self.rms_range[0]) or (rms_out > self.rms_range[1]):
+        while not self.rms_range[0] < rms_out < self.rms_range[1]:
             # generate random synth parameter values
             synth_params, cat_params_int, cat_params_idx = self._sample_parameter_values(
                 self.rnd_sampling_info, rng_cpu
@@ -170,23 +174,43 @@ class SynthDataset(Dataset):
         cat_params_int = []
         cat_params_idx = []
 
-        for interval, indices in rnd_sampling_info["num"].items():
+        for interval, indices in rnd_sampling_info["continuous"].items():
             rnd_params[indices] = torch.empty(len(indices)).uniform_(*interval, generator=rng)
 
-        for (cat_values, cat_weights), indices in rnd_sampling_info["cat"].items():
-            sampled_cat_idx = torch.multinomial(
-                torch.tensor(cat_weights), len(indices), replacement=True, generator=rng
-            )
-            # sampled_cat_idx = torch.randint(0, len(cat_values), (len(indices),), generator=rng)
-            rnd_params[indices] = torch.tensor(cat_values, dtype=torch.float32)[sampled_cat_idx]
-            cat_params_int += sampled_cat_idx.tolist()
-            cat_params_idx += indices
-
-        rnd_params[rnd_sampling_info["bin"]] = torch.bernoulli(
-            torch.full((len(rnd_sampling_info["bin"]),), 0.5), generator=rng
-        )
+        for param_type, sampling_dict in rnd_sampling_info["discrete"].items():
+            for (values, weights), indices in sampling_dict.items():
+                sampled_idx = torch.multinomial(
+                    torch.tensor(weights), len(indices), replacement=True, generator=rng
+                )
+                rnd_params[indices] = torch.tensor(values, dtype=torch.float32)[sampled_idx]
+                if param_type == "cat":
+                    cat_params_int += sampled_idx.tolist()
+                    cat_params_idx += indices
 
         return rnd_params, cat_params_int, cat_params_idx
+
+    # def _sample_parameter_values(self, rnd_sampling_info: dict, rng: torch.Generator):
+    #     rnd_params = torch.empty(self.num_used_parameters, dtype=torch.float32)
+    #     cat_params_int = []
+    #     cat_params_idx = []
+
+    #     for interval, indices in rnd_sampling_info["num"].items():
+    #         rnd_params[indices] = torch.empty(len(indices)).uniform_(*interval, generator=rng)
+
+    #     for (cat_values, cat_weights), indices in rnd_sampling_info["cat"].items():
+    #         sampled_cat_idx = torch.multinomial(
+    #             torch.tensor(cat_weights), len(indices), replacement=True, generator=rng
+    #         )
+    #         # sampled_cat_idx = torch.randint(0, len(cat_values), (len(indices),), generator=rng)
+    #         rnd_params[indices] = torch.tensor(cat_values, dtype=torch.float32)[sampled_cat_idx]
+    #         cat_params_int += sampled_cat_idx.tolist()
+    #         cat_params_idx += indices
+
+    #     rnd_params[rnd_sampling_info["bin"]] = torch.bernoulli(
+    #         torch.full((len(rnd_sampling_info["bin"]),), 0.5), generator=rng
+    #     )
+
+    #     return rnd_params, cat_params_int, cat_params_idx
 
 
 if __name__ == "__main__":

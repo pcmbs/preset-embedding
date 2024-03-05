@@ -67,7 +67,9 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
     audio_fe.to(DEVICE)
     audio_fe.eval()
 
-    p_helper = PresetHelper(synth_name=cfg.synth, params_to_exclude_str=cfg.parameters_to_exclude_str)
+    p_helper = PresetHelper(
+        synth_name=cfg.synth.name, params_to_exclude_str=cfg.synth.parameters_to_exclude_str
+    )
 
     dataset = SynthDataset(
         preset_helper=p_helper,
@@ -105,8 +107,8 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
             audio_path.mkdir(parents=True, exist_ok=True)
 
         configs_dict = {
-            "synth": cfg.synth,
-            "params_to_exclude": cfg.parameters_to_exclude_str,
+            "synth": cfg.synth.name,
+            "params_to_exclude": cfg.synth.parameters_to_exclude_str,
             "dataset_size": cfg.dataset_size,
             "seed_offset": cfg.seed_offset,
             "render_duration_in_sec": cfg.render_duration_in_sec,

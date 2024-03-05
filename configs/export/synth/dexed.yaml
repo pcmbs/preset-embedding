@@ -1,0 +1,20 @@
+### PresetHelper settings
+
+# synthesizer used to generate the dataset
+name: dexed
+
+# synthesizer parameters to exclude when generating presets
+parameters_to_exclude_str: 
+  - "cutoff"
+  - "resonance"
+  - "output"
+  - "master_tune_adj"
+  - "*_key_sync"
+  - "middle_c"
+  - "p_mode_sens."
+  - "*_switch"
+  - "*_break_point"
+  - "*_scale_depth"
+  - "*_key_scale"
+  - "*_rate_scaling"
+  - "*_key_velocity"

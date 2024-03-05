@@ -28,7 +28,7 @@ class SynthDatasetPkl(Dataset):
         """
         super().__init__()
 
-        path_to_dataset = Path(path_to_dataset) if isinstance(path_to_dataset, str) else path_to_dataset
+        path_to_dataset = Path(path_to_dataset)
         if not path_to_dataset.is_dir():
             raise ValueError(f"{path_to_dataset} is not a directory.")
 

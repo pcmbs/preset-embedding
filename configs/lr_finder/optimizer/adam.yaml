@@ -1,6 +1,0 @@
-cfg:
-  _target_: torch.optim.Adam
-  _partial_: true
-  weight_decay: 0.0
-
-name: adam

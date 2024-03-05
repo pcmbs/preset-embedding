@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
-FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime as dev 
+# FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime as dev 
+FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-runtime as dev
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -14,7 +15,7 @@ ENV CUBLAS_WORKSPACE_CONFIG=:4096:8
 
 # required for audio plugins 
 RUN apt-get update && \
-    apt-get -y --no-install-recommends install libgl1 libatomic1 libfreetype6 libasound2 && \
+    apt-get -y --no-install-recommends install libgl1 libatomic1 libfreetype6 libasound2 libglib2.0-0 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
