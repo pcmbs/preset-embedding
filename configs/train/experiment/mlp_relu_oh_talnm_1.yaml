@@ -1,8 +1,8 @@
 # @package _global_
 
 defaults:
-  - override /train_dataset: tal_noisemaker_mn04_v1
-  - override /val_dataset: tal_noisemaker_mn04_v1
+  - override /train_dataset: talnm_mn04_v1
+  - override /val_dataset: talnm_mn04_v1
   - override /m_preset: mlp_relu_oh
 
 

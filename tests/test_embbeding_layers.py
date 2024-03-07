@@ -14,7 +14,7 @@ NUM_SAMPLES = 32
 @pytest.fixture
 def tal_dataset():
     """Return a PresetHelper instance for the TAL-NoiseMaker synthesizer"""
-    params_to_exclude_str = (
+    parameters_to_exclude = (
         "master_volume",
         "voices",
         "lfo_1_sync",
@@ -27,7 +27,7 @@ def tal_dataset():
         "delay*",
     )
 
-    p_helper = PresetHelper("tal_noisemaker", params_to_exclude_str)
+    p_helper = PresetHelper("talnm", parameters_to_exclude)
 
     dataset = SynthDataset(p_helper, NUM_SAMPLES, seed_offset=5423)
 
@@ -48,7 +48,9 @@ def test_raw_params_emb_layer(tal_dataset):
 
     raw_params_emb = emb_layer(params.clone())
     # TODO: refactor that since fn doesnt exist anymore
-    for (cat_values, _), indices in tal_dataset.preset_helper.grouped_used_params["discrete"]["cat"].items():
+    for (cat_values, _), indices in tal_dataset.preset_helper.grouped_used_parameters["discrete"][
+        "cat"
+    ].items():
         for i in indices:
             for sample, emb in zip(params, raw_params_emb):
                 assert cat_values[int(sample[i])] == emb[i]
@@ -87,9 +89,11 @@ def test_onehot_params_emb_layer(tal_dataset):
 
     onehot_params_emb = emb_layer(params.clone())
 
-    offset = emb_layer.num_non_cat_params
+    offset = emb_layer.num_noncat_parameters
 
-    for (cat_values, _), indices in tal_dataset.preset_helper.grouped_used_params["discrete"]["cat"].items():
+    for (cat_values, _), indices in tal_dataset.preset_helper.grouped_used_parameters["discrete"][
+        "cat"
+    ].items():
         cat_card = len(cat_values)
         for i in indices:
             for sample, emb in zip(params, onehot_params_emb):

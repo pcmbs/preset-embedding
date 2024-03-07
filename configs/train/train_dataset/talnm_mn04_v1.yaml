@@ -1,5 +1,5 @@
 # path to the pkl dataset folder used for training
-path: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=10240000_seed=500_pkl_train-v1
+path: ${paths.root_dir}/data/datasets/talnm_mn04_size=10240000_seed=500_train_v1
 
 loader:
   batch_size: 512
@@ -8,4 +8,4 @@ loader:
   pin_memory: False
   drop_last: False
 
-name: tal_noisemaker_mn04_train-v1
+name: talnm_mn04_train_v1

@@ -66,7 +66,7 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
     log.info(f"{train_dataset.configs_dict['params_to_exclude']}")
     preset_helper = PresetHelper(
         synth_name=train_dataset.synth_name,
-        params_to_exclude_str=train_dataset.configs_dict["params_to_exclude"],
+        parameters_to_exclude=train_dataset.configs_dict["params_to_exclude"],
     )
 
     log.info(f"Instantiating Preset Encoder <{cfg.m_preset.cfg._target_}>")

@@ -63,7 +63,7 @@ class ProcessEvalPresets:
         self.rms_range = rms_range
 
         if path_to_plugin is None:
-            if preset_helper.synth_name == "tal_noisemaker":
+            if preset_helper.synth_name == "talnm":
                 path_to_plugin = PLUGINS_FOLDER / "TAL-NoiseMaker.vst3"
             elif preset_helper.synth_name == "dexed":
                 path_to_plugin = PLUGINS_FOLDER / "Dexed.vst3"
@@ -83,7 +83,9 @@ class ProcessEvalPresets:
         )
 
         # set not used parameters to default values (for safety)
-        self.renderer.set_parameters(self.preset_helper.excl_params_idx, self.preset_helper.excl_params_val)
+        self.renderer.set_parameters(
+            self.preset_helper.excl_parameters_idx, self.preset_helper.excl_parameters_val
+        )
 
     def __call__(self, presets_dict: Dict) -> Tuple[torch.Tensor, Dict, Dict]:
         """
@@ -142,7 +144,7 @@ class ProcessEvalPresets:
         # iterate over all presets in the dataset and populate a fresh tensor with the
         # value of each synth parameter used during training
         for _, preset_dict in dataset.items():
-            preset = torch.zeros(self.preset_helper.num_used_params)
+            preset = torch.zeros(self.preset_helper.num_used_parameters)
             for param_name, param_val in preset_dict["parameters"].items():
                 relative_idx = self.preset_helper.relative_idx_from_name(param_name)
                 if relative_idx is not None:  # i.e., was used during training
@@ -154,14 +156,14 @@ class ProcessEvalPresets:
 
     def _clip_continuous_parameters(self, presets) -> None:
         """Clip continuous numerical parameters values in the range defined by the preset helper"""
-        intervals = self.preset_helper.grouped_used_params["continuous"]
+        intervals = self.preset_helper.grouped_used_parameters["continuous"]
         for interval, indices in intervals.items():
             if interval != (0.0, 1.0):
                 presets[:, indices] = torch.clamp(presets[:, indices], min=interval[0], max=interval[1])
 
     def _round_discrete_parameters(self, presets) -> None:
         """Round discrete parameters (num, cat, bin) values to the nearest value used during training"""
-        params_info = self.preset_helper.grouped_used_params["discrete"]
+        params_info = self.preset_helper.grouped_used_parameters["discrete"]
         for _, type_dict in params_info.items():
 
             for (candidates, _), indices in type_dict.items():
@@ -181,11 +183,13 @@ class ProcessEvalPresets:
         """Return a list of indices of presets with RMS outside the accepted range"""
         indices_to_remove = []
         # Set excluded parameters to their default values
-        self.renderer.set_parameters(self.preset_helper.excl_params_idx, self.preset_helper.excl_params_val)
+        self.renderer.set_parameters(
+            self.preset_helper.excl_parameters_idx, self.preset_helper.excl_parameters_val
+        )
         # render all presets and compute their RMS. Presets with RMS outside the accepted range are removed
         for i, params in enumerate(presets):
-            self.renderer.set_parameters(self.preset_helper.used_params_idx, params)
-            self.renderer.set_midi_params(self.midi_note, self.midi_velocity, self.midi_duration_in_sec)
+            self.renderer.set_parameters(self.preset_helper.used_parameters_idx, params)
+            self.renderer.set_midi_parameters(self.midi_note, self.midi_velocity, self.midi_duration_in_sec)
             audio_out = torch.from_numpy(self.renderer.render_note())
             rms_out = torch.sqrt(torch.mean(torch.square(audio_out))).item()
             if not self.rms_range[0] < rms_out < self.rms_range[1]:
@@ -223,33 +227,35 @@ class RenderPreset(Dataset):
         self.preset_helper = preset_helper
         self.renderer = renderer
 
-        assert self.presets.shape[1] == self.preset_helper.num_used_params
+        assert self.presets.shape[1] == self.preset_helper.num_used_parameters
 
         # set not used parameters to default values (for safety)
-        self.renderer.set_parameters(self.preset_helper.excl_params_idx, self.preset_helper.excl_params_val)
+        self.renderer.set_parameters(
+            self.preset_helper.excl_parameters_idx, self.preset_helper.excl_parameters_val
+        )
 
     def __len__(self):
         return self.presets.shape[0]
 
     def __getitem__(self, idx: int):
-        synth_params = self.presets[idx]
+        synth_parameters = self.presets[idx]
         # set synth parameters
-        self.renderer.set_parameters(self.preset_helper.used_params_idx, synth_params)
+        self.renderer.set_parameters(self.preset_helper.used_parameters_idx, synth_parameters)
         # set midi parameters
-        self.renderer.set_midi_params(
+        self.renderer.set_midi_parameters(
             self.renderer.midi_note, self.renderer.midi_velocity, self.renderer.midi_duration_in_sec
         )
         # render audio
         audio_out = torch.from_numpy(self.renderer.render_note())
 
         # Replace categorical parameter values by the category index
-        for (values, _), indices in self.preset_helper.grouped_used_params["discrete"]["cat"].items():
+        for (values, _), indices in self.preset_helper.grouped_used_parameters["discrete"]["cat"].items():
             value_to_index = {val: idx for idx, val in enumerate(values)}
-            synth_params[indices] = torch.tensor(
-                [value_to_index[round(synth_params[i].item(), 3)] for i in indices], dtype=torch.float32
+            synth_parameters[indices] = torch.tensor(
+                [value_to_index[round(synth_parameters[i].item(), 3)] for i in indices], dtype=torch.float32
             )
 
-        return synth_params, audio_out
+        return synth_parameters, audio_out
 
 
 if __name__ == "__main__":

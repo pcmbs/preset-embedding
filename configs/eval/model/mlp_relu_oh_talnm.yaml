@@ -7,4 +7,5 @@ cfg:
 
 name: mlp_relu_oh
 
-ckpt_name: mlp_relu_oh_talnm_mn04_train-v1_e0_mrr0.9787.ckpt
+# ckpt_name: mlp_relu_oh_talnm_mn04_train-v1_e0_mrr0.9787.ckpt
+ckpt_name: mlp_relu_oh_talnm_mn04_train_v1_e0_mrr0.9704.ckpt

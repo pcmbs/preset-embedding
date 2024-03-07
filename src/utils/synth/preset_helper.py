@@ -9,47 +9,49 @@ class PresetHelper:
 
     def __init__(
         self,
-        synth_name: str = "tal_noisemaker",
-        params_to_exclude_str: Sequence[str] = (),
+        synth_name: str = "talnm",
+        parameters_to_exclude: Sequence[str] = (),
     ):
         """
         Helper class to generate random presets for a given synthesizer.
 
         Args
         - parameters (Sequence[Union[EmptyParameter, SettingsParameter, SynthParameter]]): synthesizer parameters
-        - params_to_exclude_str (Sequence[str]): list of parameters to exclude, i.e, parameters that are kept fixed
+        - parameters_to_exclude (Sequence[str]): list of parameters to exclude, i.e, parameters that are kept fixed
         during while rendering a preset and are not inputs to the preset encoder. Can be the full name or a pattern
         that appears at the {begining, end}. In the later, the pattern must be {followed, preceded} by a "*". (default: ())
         - synth_name (str): name of the synthesizer
         """
-        if synth_name in ["tal_noisemaker", "dexed", "diva"]:
+        if synth_name in ["talnm", "dexed", "diva"]:
             parameters = getattr(data.synths, synth_name).SYNTH_PARAMETERS
         else:
             raise NotImplementedError()
 
         self._synth_name = synth_name
         self._parameters = parameters
-        self._excl_params_str = params_to_exclude_str
+        self._excl_parameters_str = parameters_to_exclude
 
-        self._excl_params = self._exclude_parameters(params_to_exclude_str)
+        self._excl_parameters = self._exclude_parameters(parameters_to_exclude)
 
-        self._excl_params_idx = [p.index for p in self._excl_params]
-        self._excl_params_val = [p.default_value for p in self._excl_params]
+        self._excl_parameters_idx = [p.index for p in self._excl_parameters]
+        self._excl_parameters_val = [p.default_value for p in self._excl_parameters]
 
-        self._used_params = [p for p in self._parameters if p.index not in self._excl_params_idx]
-        self._used_params_idx = [p.index for p in self._used_params]
-        self._used_params_descr = [(i, p.index, p.name, p.type) for i, p in enumerate(self._used_params)]
-        self._used_num_params_idx = [p[0] for p in self._used_params_descr if p[3] == "num"]
-        self._used_cat_params_idx = [p[0] for p in self._used_params_descr if p[3] == "cat"]
-        self._used_bin_params_idx = [p[0] for p in self._used_params_descr if p[3] == "bin"]
+        self._used_parameters = [p for p in self._parameters if p.index not in self._excl_parameters_idx]
+        self._used_parameters_idx = [p.index for p in self._used_parameters]
+        self._used_parameters_descr = [
+            (i, p.index, p.name, p.type) for i, p in enumerate(self._used_parameters)
+        ]
+        self._used_num_parameters_idx = [p[0] for p in self._used_parameters_descr if p[3] == "num"]
+        self._used_cat_parameters_idx = [p[0] for p in self._used_parameters_descr if p[3] == "cat"]
+        self._used_bin_parameters_idx = [p[0] for p in self._used_parameters_descr if p[3] == "bin"]
 
-        self._relative_idx_from_name = {p.name: i for i, p in enumerate(self._used_params)}
+        self._relative_idx_from_name = {p.name: i for i, p in enumerate(self._used_parameters)}
 
-        assert len(self._used_num_params_idx) + len(self._used_cat_params_idx) + len(
-            self._used_bin_params_idx
-        ) == len(self._used_params)
+        assert len(self._used_num_parameters_idx) + len(self._used_cat_parameters_idx) + len(
+            self._used_bin_parameters_idx
+        ) == len(self._used_parameters)
 
-        self._grouped_used_params = self._group_params_for_sampling(self._used_params)
+        self._grouped_used_parameters = self._group_parameters_for_sampling(self._used_parameters)
 
     @property
     def synth_name(self) -> str:
@@ -62,52 +64,53 @@ class PresetHelper:
         return self._parameters
 
     @property
-    def excl_params_idx(self) -> List[int]:
+    def excl_parameters_idx(self) -> List[int]:
         """Return the absolute indices of the excluded synthesizer parameters."""
-        return self._excl_params_idx
+        return self._excl_parameters_idx
 
     @property
-    def excl_params_val(self) -> List[int]:
+    def excl_parameters_val(self) -> List[int]:
         """Return the excluded synthesizer parameters' default value."""
-        return self._excl_params_val
+        return self._excl_parameters_val
 
     @property
-    def excl_params_str(self) -> Tuple[str]:
+    def excl_parameters_str(self) -> Tuple[str]:
         """Return the string patterns used for excluding synthesizer parameters as tuple."""
-        return self._excl_params_str
+        return self._excl_parameters_str
 
     @property
-    def num_used_params(self) -> int:
+    def num_used_parameters(self) -> int:
         """
         Return the number of used synthesizer parameters.
 
         Used synthesizer parameters refer to parameters that are allowed
         to vary across training samples and are thus inputs to the preset encoder.
         """
-        return len(self._used_params_idx)
+        return len(self._used_parameters_idx)
 
     @property
-    def used_params_idx(self) -> List[int]:
+    def used_parameters_idx(self) -> List[int]:
         """
         Return the absolute indices of the used synthesizer parameters.
 
         Used synthesizer parameters refer to parameters that are allowed
         to vary across training samples and are thus inputs to the preset encoder.
         """
-        return self._used_params_idx
+        return self._used_parameters_idx
 
     @property
-    def used_noncat_params_idx(self) -> List[int]:
+    def used_noncat_parameters_idx(self) -> List[int]:
         """
-        Return the indices of the non categorical synthesizer parameters relative to the used parameters.
+        Return the indices of the non-categorical (i.e., numerical and binary) synthesizer parameters
+        relative to the used parameters.
 
         Used synthesizer parameters refer to parameters that are allowed
         to vary across training samples and are thus inputs to the preset encoder.
         """
-        return self._used_num_params_idx + self._used_bin_params_idx
+        return self._used_num_parameters_idx + self._used_bin_parameters_idx
 
     @property
-    def grouped_used_params(self) -> dict:
+    def grouped_used_parameters(self) -> dict:
         """
         Return a dictionary of the used synthesizer parameters grouped by types (`continuous` or `discrete`).
 
@@ -126,13 +129,13 @@ class PresetHelper:
         lists of indices (relative to the used parameters) representing discrete synthesizer parameters
         with the same possible values and weights.
         """
-        return self._grouped_used_params
+        return self._grouped_used_parameters
 
     @property
-    def used_params_description(self) -> List[Tuple[int, str]]:
+    def used_parameters_description(self) -> List[Tuple[int, str]]:
         """Return the description of the used synthesizer parameters as a
         list of tuple (<idx>, <synth-param-idx>, <synth-param-name>, <synth-param-type>)."""
-        return self._used_params_descr
+        return self._used_parameters_descr
 
     def relative_idx_from_name(self, name: str) -> int:
         """
@@ -155,25 +158,25 @@ class PresetHelper:
             if any(match_pattern(p.name, pattern) for pattern in pattern_to_exclude)
         ]
 
-    def _group_params_for_sampling(self, parameters):
-        grouped_params = {"continuous": {}, "discrete": {"num": {}, "cat": {}, "bin": {}}}
+    def _group_parameters_for_sampling(self, parameters):
+        grouped_parameters = {"continuous": {}, "discrete": {"num": {}, "cat": {}, "bin": {}}}
 
         for i, p in enumerate(parameters):
             type_key = p.type
             if p.cardinality == -1:
                 key = p.interval
-                if key in grouped_params["continuous"]:
-                    grouped_params["continuous"][key].append(i)
+                if key in grouped_parameters["continuous"]:
+                    grouped_parameters["continuous"][key].append(i)
                 else:
-                    grouped_params["continuous"][key] = [i]
+                    grouped_parameters["continuous"][key] = [i]
             else:
                 vw_key = (p.cat_values, p.cat_weights)
-                if vw_key in grouped_params["discrete"][type_key]:
-                    grouped_params["discrete"][type_key][vw_key].append(i)
+                if vw_key in grouped_parameters["discrete"][type_key]:
+                    grouped_parameters["discrete"][type_key][vw_key].append(i)
                 else:
-                    grouped_params["discrete"][type_key][vw_key] = [i]
+                    grouped_parameters["discrete"][type_key][vw_key] = [i]
 
-        return grouped_params
+        return grouped_parameters
 
 
 if __name__ == "__main__":
@@ -217,5 +220,5 @@ if __name__ == "__main__":
 
     p_helper = PresetHelper("diva", PARAMETERS_TO_EXCLUDE_STR)
 
-    rnd_sampling_info = p_helper.grouped_used_params
+    rnd_sampling_info = p_helper.grouped_used_parameters
     print(rnd_sampling_info)

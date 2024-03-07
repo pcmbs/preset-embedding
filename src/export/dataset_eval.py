@@ -64,7 +64,7 @@ def generate_eval_dataset(
     ### Process the json dict of hand-crafted presets used to generate the evaluation dataset
     preset_helper = PresetHelper(
         synth_name=train_cfg["synth"],
-        params_to_exclude_str=train_cfg["params_to_exclude"],
+        parameters_to_exclude=train_cfg["params_to_exclude"],
     )
 
     processor = ProcessEvalPresets(
@@ -97,7 +97,7 @@ def generate_eval_dataset(
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     audio_embeddings = torch.empty((len(presets), audio_fe.out_features), device="cpu")
-    synth_params = torch.empty((len(dataset), preset_helper.num_used_params), device="cpu")
+    synth_parameters = torch.empty((len(dataset), preset_helper.num_used_parameters), device="cpu")
 
     pbar = tqdm(
         loader,
@@ -111,7 +111,7 @@ def generate_eval_dataset(
             audio_emb = audio_fe(audio)
 
         audio_embeddings[i * batch_size : (i + 1) * batch_size] = audio_emb.cpu()
-        synth_params[i * batch_size : (i + 1) * batch_size] = params.cpu()
+        synth_parameters[i * batch_size : (i + 1) * batch_size] = params.cpu()
 
         if export_audio:
             for j, sample in enumerate(audio):
@@ -126,7 +126,7 @@ def generate_eval_dataset(
     print(f"Saving evaluation dataset to {export_path}...")
     configs_dict = {
         "synth": preset_helper.synth_name,
-        "params_to_exclude": preset_helper.excl_params_str,
+        "params_to_exclude": preset_helper.excl_parameters_str,
         "dataset_size": len(presets),
         "render_duration_in_sec": processor.renderer.render_duration_in_sec,
         "midi_note": processor.renderer.midi_note,
@@ -141,14 +141,14 @@ def generate_eval_dataset(
         json.dump(selected_presets, f)
     with open(export_path / "removed_presets.json", "w", encoding="utf-8") as f:
         json.dump(removed_presets, f)
-    with open(export_path / "synth_params.pkl", "wb") as f:
-        torch.save(synth_params, f)
+    with open(export_path / "synth_parameters.pkl", "wb") as f:
+        torch.save(synth_parameters, f)
     with open(export_path / "audio_embeddings.pkl", "wb") as f:
         torch.save(audio_embeddings, f)
     with open(export_path / "configs.pkl", "wb") as f:
         torch.save(configs_dict, f)
     with open(export_path / "synth_parameters_description.pkl", "wb") as f:
-        torch.save(preset_helper.used_params_description, f)
+        torch.save(preset_helper.used_parameters_description, f)
 
 
 if __name__ == "__main__":
@@ -160,13 +160,13 @@ if __name__ == "__main__":
     DATASETS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "datasets"
 
     # indicate the path to the train dataset here
-    PATH_TO_TRAIN_DATASET = DATASETS_FOLDER / "tal_noisemaker_mn04_size=10240000_seed=500_pkl_train-v1"
+    PATH_TO_TRAIN_DATASET = DATASETS_FOLDER / "talnm_mn04_size=10240000_seed=500_train_v1"
 
     # indicate the path to the json dataset here
-    PATH_TO_JSON_DATASET = DATASETS_FOLDER / "json_datasets" / "tal_noisemaker_dataset.json"
+    PATH_TO_JSON_DATASET = DATASETS_FOLDER / "json_datasets" / "talnm_dataset.json"
 
     # indicate the path to the export folder here
-    export_path = DATASETS_FOLDER / "eval" / "tal_noisemaker_mn04-v1"
+    export_path = DATASETS_FOLDER / "eval" / "talnm_mn04_eval_v1"
     if not export_path.exists():
         export_path.mkdir(exist_ok=True, parents=True)
 

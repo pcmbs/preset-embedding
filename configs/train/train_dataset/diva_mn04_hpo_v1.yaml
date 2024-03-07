@@ -1,0 +1,11 @@
+# path to the pkl dataset folder used for training
+path: ${paths.root_dir}/data/datasets/diva_mn04_size=1000000_seed=300_hpo_v1
+
+loader:
+  batch_size: 512
+  num_workers: 8
+  shuffle: True
+  pin_memory: False
+  drop_last: False
+
+name: diva_mn04_hpo_v1

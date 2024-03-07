@@ -1,6 +1,7 @@
 """
 Module used to render VST3 presets from arbitrary synths.
 """
+
 from pathlib import Path
 from typing import List, Sequence
 import dawdreamer as daw
@@ -81,7 +82,7 @@ class PresetRenderer:
         """
         return [self.synth.get_parameter(idx) for idx in params_idx]
 
-    def set_midi_params(
+    def set_midi_parameters(
         self,
         midi_note: int = 60,
         midi_velocity: int = 100,

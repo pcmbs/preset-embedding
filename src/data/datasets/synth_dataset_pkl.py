@@ -22,7 +22,7 @@ class SynthDatasetPkl(Dataset):
 
         Args
         - `path_to_dataset` (Union[str, Path]): path to the folder containing the pickled files
-        - `mmap` (bool): whether the audio_embeddings.pkl and synth_params.pkl tensors should be mmaped
+        - `mmap` (bool): whether the audio_embeddings.pkl and synth_parameters.pkl tensors should be mmaped
         rather than loading all the storages into memory. This can be advantageous for large datasets.
         (Default: True)
         """
@@ -38,14 +38,14 @@ class SynthDatasetPkl(Dataset):
             self.configs_dict = torch.load(f)
 
         with open(self.path_to_dataset / "synth_parameters_description.pkl", "rb") as f:
-            self._synth_params_descr = torch.load(f)
+            self._synth_parameters_descr = torch.load(f)
 
         # whether or not to mmap the dataset (pickled torch tensors)
         self.is_mmap = mmap
 
         # load the dataset in __getitem__() to avoid unexpected high memory usage when num_workers>0
         self.audio_embeddings = None
-        self.synth_params = None
+        self.synth_parameters = None
 
     @property
     def audio_fe_name(self) -> str:
@@ -65,23 +65,23 @@ class SynthDatasetPkl(Dataset):
         return self.configs_dict["synth"]
 
     @property
-    def num_used_synth_params(self) -> int:
-        # return self.synth_params.shape[1]
-        return len(self._synth_params_descr)
+    def num_used_synth_parameters(self) -> int:
+        # return self.synth_parameters.shape[1]
+        return len(self._synth_parameters_descr)
 
     @property
     def synth_parameters_description(self) -> List[Tuple[int, str, int]]:
         """Return the description of the used synthesizer parameters as a
         list of tuple (feature_idx, synth_param_name, synth_param_idx)."""
-        return self._synth_params_descr
+        return self._synth_parameters_descr
 
     @property
     def embedding_size_in_mb(self) -> float:
         return round(self.audio_embeddings.element_size() * self.audio_embeddings.nelement() * 1e-6, 2)
 
     @property
-    def synth_params_size_in_mb(self) -> float:
-        return round(self.synth_params.element_size() * self.synth_params.nelement() * 1e-6, 2)
+    def synth_parameters_size_in_mb(self) -> float:
+        return round(self.synth_parameters.element_size() * self.synth_parameters.nelement() * 1e-6, 2)
 
     def __len__(self) -> int:
         # return len(self.audio_embeddings)
@@ -90,19 +90,19 @@ class SynthDatasetPkl(Dataset):
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
 
         # load and mmap the dataset during the first call of __getitem__
-        if self.audio_embeddings is None or self.synth_params is None:
+        if self.audio_embeddings is None or self.synth_parameters is None:
             self._load_dataset()
 
-        return self.synth_params[index], self.audio_embeddings[index]
+        return self.synth_parameters[index], self.audio_embeddings[index]
 
     def _load_dataset(self) -> None:
         self.audio_embeddings = torch.load(
             str(self.path_to_dataset / "audio_embeddings.pkl"), map_location="cpu", mmap=self.is_mmap
         )
-        self.synth_params = torch.load(
-            str(self.path_to_dataset / "synth_params.pkl"), map_location="cpu", mmap=self.is_mmap
+        self.synth_parameters = torch.load(
+            str(self.path_to_dataset / "synth_parameters.pkl"), map_location="cpu", mmap=self.is_mmap
         )
-        assert len(self.audio_embeddings) == len(self.synth_params)
+        assert len(self.audio_embeddings) == len(self.synth_parameters)
 
 
 if __name__ == "__main__":
@@ -112,10 +112,7 @@ if __name__ == "__main__":
 
     NUM_EPOCH = 5
     PATH_TO_DATASET = (
-        Path(os.environ["PROJECT_ROOT"])
-        / "data"
-        / "datasets"
-        / "tal_noisemaker_mn04_size=10240000_seed=500_pkl_train-v1"
+        Path(os.environ["PROJECT_ROOT"]) / "data" / "datasets" / "talnm_mn04_size=10240000_seed=500_train_v1"
     )
 
     dataset = SynthDatasetPkl(PATH_TO_DATASET)

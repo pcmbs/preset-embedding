@@ -44,7 +44,7 @@ def evaluate(cfg: DictConfig) -> None:
     log.info(f"{eval_dataset.configs_dict['params_to_exclude']}")
     preset_helper = PresetHelper(
         synth_name=eval_dataset.synth_name,
-        params_to_exclude_str=eval_dataset.configs_dict["params_to_exclude"],
+        parameters_to_exclude=eval_dataset.configs_dict["params_to_exclude"],
     )
 
     log.info(f"Instantiating Preset Encoder <{cfg.model.cfg._target_}>")

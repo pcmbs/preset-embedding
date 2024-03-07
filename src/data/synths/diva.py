@@ -626,12 +626,22 @@ SYNTH_PARAMETERS = [
     SynthParameter(index=272, name="clk:multiply", type_="num", default_value=0.33),
     SynthParameter(index=273, name="clk:timebase", type_="cat", default_value=0.6667, cardinality=4),
     SynthParameter(index=274, name="clk:swing", type_="num"),
-    SynthParameter(index=275, name="arp:direction", type_="cat", default_value=0.20, cardinality=6),
+    SynthParameter(
+        index=275,
+        name="arp:direction",
+        type_="cat",
+        default_value=0.20,
+        cardinality=6,
+        excluded_cat_idx=(0, 5),  # exclude play since only one note played, and random for reproducibility
+    ),
     SynthParameter(index=276, name="arp:octaves", type_="num", cardinality=4),
     SynthParameter(index=277, name="arp:multiply", type_="cat", cardinality=5),  # FIXME: didn't find param
     SynthParameter(index=278, name="arp:restart", type_="cat", cardinality=13),
-    SynthParameter(index=279, name="arp:onoff", type_="bin"),
-    SynthParameter(index=280, name="arp:order", type_="cat", cardinality=4),
+    # only want arp on a small subset of presets
+    SynthParameter(index=279, name="arp:onoff", type_="bin", cat_weights=(0.95, 0.05)),
+    SynthParameter(
+        index=280, name="arp:order", type_="cat", cardinality=4, excluded_cat_idx=(2, 3)  # only if poly
+    ),
 ]
 
 del _EXCLUDED_CAT_FOR_MOD

@@ -85,7 +85,7 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
     # instantiate PresetHelper
     preset_helper = PresetHelper(
         synth_name=train_dataset.synth_name,
-        params_to_exclude_str=train_dataset.configs_dict["params_to_exclude"],
+        parameters_to_exclude=train_dataset.configs_dict["params_to_exclude"],
     )
 
     # instantiate preset encoder

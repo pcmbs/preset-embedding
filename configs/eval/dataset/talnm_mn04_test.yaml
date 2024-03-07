@@ -1,0 +1,4 @@
+# enter the path to the pkl dataset folder for the MMR validation
+path: ${paths.root_dir}/data/datasets/talnm_mn04_size=131072_seed=401_train_val_v1
+
+name: talnm_mn04_test

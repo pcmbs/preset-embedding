@@ -2,7 +2,7 @@
  
 defaults:
   - _self_
-  - dataset: tal_noisemaker_mn04_v1
+  - dataset: talnm_mn04_v1
   - model: ??? 
   - hydra: default
   - logger: null 

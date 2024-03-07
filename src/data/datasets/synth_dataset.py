@@ -83,7 +83,7 @@ class SynthDataset(Dataset):
         self.rms_range = rms_range
 
         if path_to_plugin is None:
-            if preset_helper.synth_name == "tal_noisemaker":
+            if preset_helper.synth_name == "talnm":
                 path_to_plugin = PLUGINS_FOLDER / "TAL-NoiseMaker.vst3"
             elif preset_helper.synth_name == "dexed":
                 path_to_plugin = PLUGINS_FOLDER / "Dexed.vst3"
@@ -94,7 +94,7 @@ class SynthDataset(Dataset):
         if isinstance(path_to_plugin, Path):
             path_to_plugin = str(path_to_plugin)
 
-        self.engine = PresetRenderer(
+        self.renderer = PresetRenderer(
             synth_path=path_to_plugin,
             sample_rate=sample_rate,
             render_duration_in_sec=render_duration_in_sec,
@@ -104,7 +104,9 @@ class SynthDataset(Dataset):
         )
 
         # set not used parameters to default values (for safety)
-        self.engine.set_parameters(self.preset_helper.excl_params_idx, self.preset_helper.excl_params_val)
+        self.renderer.set_parameters(
+            self.preset_helper.excl_parameters_idx, self.preset_helper.excl_parameters_val
+        )
 
     @property
     def synth_name(self):
@@ -114,23 +116,23 @@ class SynthDataset(Dataset):
     @property
     def rnd_sampling_info(self):
         """Return the description of the random sampling parameters."""
-        return self.preset_helper.grouped_used_params
+        return self.preset_helper.grouped_used_parameters
 
     @property
     def num_used_parameters(self):
         """Return the number of used synthesizer parameters."""
-        return self.preset_helper.num_used_params
+        return self.preset_helper.num_used_parameters
 
     @property
-    def used_params_description(self) -> List[Tuple[int, str]]:
+    def used_parameters_description(self) -> List[Tuple[int, str]]:
         """Return the description of the used synthesizer parameters as a
         list of tuple (<idx>, <synth-param-idx>, <synth-param-name>, <synth-param-type>)."""
-        return self.preset_helper.used_params_description
+        return self.preset_helper.used_parameters_description
 
     @property
     def sample_rate(self):
         """Return the sample rate of the audio to generate."""
-        return self.engine.sample_rate
+        return self.renderer.sample_rate
 
     @property
     def index_range(self) -> Tuple[int, int]:
@@ -149,15 +151,15 @@ class SynthDataset(Dataset):
         # generate random preset until the audio rms value is in an acceptable range
         while not self.rms_range[0] < rms_out < self.rms_range[1]:
             # generate random synth parameter values
-            synth_params, cat_params_int, cat_params_idx = self._sample_parameter_values(
+            synth_parameters, cat_parameters_int, cat_parameters_idx = self._sample_parameter_values(
                 self.rnd_sampling_info, rng_cpu
             )
             # set synth parameters
-            self.engine.set_parameters(self.preset_helper.used_params_idx, synth_params)
+            self.renderer.set_parameters(self.preset_helper.used_parameters_idx, synth_parameters)
             # set midi parameters
-            self.engine.set_midi_params(self.midi_note, self.midi_velocity, self.midi_duration_in_sec)
+            self.renderer.set_midi_parameters(self.midi_note, self.midi_velocity, self.midi_duration_in_sec)
             # render audio
-            audio_out = torch.from_numpy(self.engine.render_note())
+            audio_out = torch.from_numpy(self.renderer.render_note())
             # check rms
             rms_out = torch.sqrt(torch.mean(torch.square(audio_out))).item()
 
@@ -165,52 +167,52 @@ class SynthDataset(Dataset):
         idx = idx if self.dataset_size == 100_000_000_000 else -1
 
         # replace raw categorical parameter values by the category index
-        synth_params[cat_params_idx] = torch.tensor(cat_params_int, dtype=torch.float32)
+        synth_parameters[cat_parameters_idx] = torch.tensor(cat_parameters_int, dtype=torch.float32)
 
-        return synth_params, audio_out, idx
+        return synth_parameters, audio_out, idx
 
     def _sample_parameter_values(self, rnd_sampling_info: dict, rng: torch.Generator):
-        rnd_params = torch.empty(self.num_used_parameters, dtype=torch.float32)
-        cat_params_int = []
-        cat_params_idx = []
+        rnd_parameters = torch.empty(self.num_used_parameters, dtype=torch.float32)
+        cat_parameters_int = []
+        cat_parameters_idx = []
 
         for interval, indices in rnd_sampling_info["continuous"].items():
-            rnd_params[indices] = torch.empty(len(indices)).uniform_(*interval, generator=rng)
+            rnd_parameters[indices] = torch.empty(len(indices)).uniform_(*interval, generator=rng)
 
         for param_type, sampling_dict in rnd_sampling_info["discrete"].items():
             for (values, weights), indices in sampling_dict.items():
                 sampled_idx = torch.multinomial(
                     torch.tensor(weights), len(indices), replacement=True, generator=rng
                 )
-                rnd_params[indices] = torch.tensor(values, dtype=torch.float32)[sampled_idx]
+                rnd_parameters[indices] = torch.tensor(values, dtype=torch.float32)[sampled_idx]
                 if param_type == "cat":
-                    cat_params_int += sampled_idx.tolist()
-                    cat_params_idx += indices
+                    cat_parameters_int += sampled_idx.tolist()
+                    cat_parameters_idx += indices
 
-        return rnd_params, cat_params_int, cat_params_idx
+        return rnd_parameters, cat_parameters_int, cat_parameters_idx
 
     # def _sample_parameter_values(self, rnd_sampling_info: dict, rng: torch.Generator):
-    #     rnd_params = torch.empty(self.num_used_parameters, dtype=torch.float32)
-    #     cat_params_int = []
-    #     cat_params_idx = []
+    #     rnd_parameters = torch.empty(self.num_used_parameters, dtype=torch.float32)
+    #     cat_parameters_int = []
+    #     cat_parameters_idx = []
 
     #     for interval, indices in rnd_sampling_info["num"].items():
-    #         rnd_params[indices] = torch.empty(len(indices)).uniform_(*interval, generator=rng)
+    #         rnd_parameters[indices] = torch.empty(len(indices)).uniform_(*interval, generator=rng)
 
     #     for (cat_values, cat_weights), indices in rnd_sampling_info["cat"].items():
     #         sampled_cat_idx = torch.multinomial(
     #             torch.tensor(cat_weights), len(indices), replacement=True, generator=rng
     #         )
     #         # sampled_cat_idx = torch.randint(0, len(cat_values), (len(indices),), generator=rng)
-    #         rnd_params[indices] = torch.tensor(cat_values, dtype=torch.float32)[sampled_cat_idx]
-    #         cat_params_int += sampled_cat_idx.tolist()
-    #         cat_params_idx += indices
+    #         rnd_parameters[indices] = torch.tensor(cat_values, dtype=torch.float32)[sampled_cat_idx]
+    #         cat_parameters_int += sampled_cat_idx.tolist()
+    #         cat_parameters_idx += indices
 
-    #     rnd_params[rnd_sampling_info["bin"]] = torch.bernoulli(
+    #     rnd_parameters[rnd_sampling_info["bin"]] = torch.bernoulli(
     #         torch.full((len(rnd_sampling_info["bin"]),), 0.5), generator=rng
     #     )
 
-    #     return rnd_params, cat_params_int, cat_params_idx
+    #     return rnd_parameters, cat_parameters_int, cat_parameters_idx
 
 
 if __name__ == "__main__":

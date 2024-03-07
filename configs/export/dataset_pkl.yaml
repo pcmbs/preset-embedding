@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - synth: tal_noisemaker
+  - synth: talnm
 
 
 ############ Export path Settings
@@ -14,7 +14,7 @@ tag: ???
 
 ### SynthDataset settings
 
-# dataset size:
+# dataset size: 
 # For MMR validation dataset: need to be num_eval * num_preds_per_eval
 # e.g., for 128 evaluations and 512 predictions per eval we have 128 * 512 = 64_512 samples
 dataset_size: 65_536
@@ -55,7 +55,7 @@ root_dir: ${oc.env:PROJECT_ROOT}
 hydra:
   output_subdir: null
   run:
-    dir: ${root_dir}/${export_relative_path}/${synth.name}_${audio_fe}_size=${dataset_size}_seed=${seed_offset}_pkl_${tag}
+    dir: ${root_dir}/${export_relative_path}/${synth.name}_${audio_fe}_size=${dataset_size}_seed=${seed_offset}_${tag}
 
   job: 
     chdir: True
@@ -63,7 +63,7 @@ hydra:
   job_logging:
     handlers:
       file:
-        filename: ${hydra.runtime.output_dir}/configs.log
+        filename: ${hydra.runtime.output_dir}/infos.log
     formatters:
       simple:
         format: '%(message)s'

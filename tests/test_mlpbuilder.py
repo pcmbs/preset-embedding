@@ -10,7 +10,7 @@ from utils.synth import PresetHelper
 @pytest.fixture
 def tal_preset_helper():
     """Return a PresetHelper instance for the TAL-NoiseMaker synthesizer"""
-    params_to_exclude_str = (
+    parameters_to_exclude = (
         "master_volume",
         "voices",
         "lfo_1_sync",
@@ -23,7 +23,7 @@ def tal_preset_helper():
         "delay*",
     )
 
-    return PresetHelper("tal_noisemaker", params_to_exclude_str)
+    return PresetHelper("talnm", parameters_to_exclude)
 
 
 @pytest.mark.parametrize(
@@ -48,8 +48,8 @@ def test_mlp_snn_raw(tal_preset_helper, out_features, kwargs):
 
     # assert that the input size is correct
     # TODO: mod with more advance embedding layers
-    assert mlp.embedding_layer.embedding_dim == tal_preset_helper.num_used_params
-    assert mlp.blocks[0].snn_block[0].in_features == tal_preset_helper.num_used_params
+    assert mlp.embedding_layer.embedding_dim == tal_preset_helper.num_used_parameters
+    assert mlp.blocks[0].snn_block[0].in_features == tal_preset_helper.num_used_parameters
 
     # assert that the hidden size is correct
     assert mlp.out_layer.in_features == kwargs.get("hidden_features", 1024)
@@ -81,8 +81,8 @@ def test_mlp_relu_raw(tal_preset_helper, out_features, kwargs):
 
     # assert that the input size is correct
     # TODO: mod with more advance embedding layers
-    assert mlp.embedding_layer.embedding_dim == tal_preset_helper.num_used_params
-    assert mlp.blocks[0].bnr_block[0].in_features == tal_preset_helper.num_used_params
+    assert mlp.embedding_layer.embedding_dim == tal_preset_helper.num_used_parameters
+    assert mlp.blocks[0].bnr_block[0].in_features == tal_preset_helper.num_used_parameters
 
     # assert that the hidden size is correct
     assert mlp.out_layer.in_features == kwargs.get("hidden_features", 1024)

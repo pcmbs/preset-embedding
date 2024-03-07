@@ -24,7 +24,7 @@ class MlpBuilder(nn.Module):
         super().__init__()
 
         self.embedding_layer = embedding_layer(**embedding_kwargs)
-        self.in_features = self.embedding_layer.embedding_dim
+        self.in_features = self.embedding_layer.embedding_dim * self.embedding_layer.out_length
 
         self.norm_pre = nn.LayerNorm(self.in_features) if pre_norm else nn.Identity()
 
@@ -62,6 +62,8 @@ class MlpBuilder(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.embedding_layer(x)
+        if len(x.shape) > 2:
+            x = x.reshape(x.shape[0], -1)
         x = self.norm_pre(x)
         x = self.blocks(x)
         x = self.out_layer(x)
@@ -118,7 +120,7 @@ def mlp_relu_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.
 
 def mlp_gelu_raw(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
     """
-    MLP with LazerNorm+GeLU blocks and and raw parameter values in range [0,1].
+    MLP with LayerNorm+GeLU blocks and and raw parameter values in range [0,1].
     """
     return MlpBuilder(
         out_features=out_features,
@@ -161,7 +163,7 @@ if __name__ == "__main__":
         "delay*",
     )
 
-    p_helper = PresetHelper("tal_noisemaker", PARAMETERS_TO_EXCLUDE_STR)
+    p_helper = PresetHelper("talnm", PARAMETERS_TO_EXCLUDE_STR)
     model = mlp_gelu_oh(192, p_helper)
     print(model)
     print(sum(p.numel() for p in model.parameters()))

@@ -4,12 +4,12 @@ defaults:
   - _self_
   - m_preset: mlp_relu_raw
   - search_space: mlp_all
-  - sampler: qmc-tpe
+  - sampler: qmc_tpe
   - pruner: nop
 
 # paths to train and val datasets for HPO
-path_to_train_dataset: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=1000000_seed=300_pkl_hpo-v1
-path_to_val_dataset: ${paths.root_dir}/data/datasets/tal_noisemaker_mn04_size=65536_seed=400_pkl_hpo-val_v1
+path_to_train_dataset: ${paths.root_dir}/data/datasets/talnm_mn04_size=1000000_seed=300_hpo_v1
+path_to_val_dataset: ${paths.root_dir}/data/datasets/talnm_mn04_size=65536_seed=400_hpo_val_v1
 
 # tag for the study, which will be added to the name of the study. 
 # Note that if the study already exists, it will be resumed.

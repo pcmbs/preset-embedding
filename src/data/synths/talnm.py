@@ -5,7 +5,7 @@ from utils.synth import SynthParameter
 # TODO: should have made "transpose" a num with cardinality=4 and cat_values=(0.0, 0.5, 0.75, 1.0)
 # instead of cat but was not implemented at this point, same goes for "envelop_speed"... maybe do that later
 
-SYNTH_NAME = "tal_noisemaker"
+SYNTH_NAME = "talnm"
 
 SYNTH_PARAMETERS = (
     # SynthParameter(index=0, name="-", type_="num", default_value=0.5),
@@ -50,10 +50,11 @@ SYNTH_PARAMETERS = (
     SynthParameter(index=37, name="osc_2_phase", type_="num"),
     SynthParameter(index=38, name="osc_1_pw", type_="num", default_value=0.5),
     SynthParameter(index=39, name="osc_1_phase", type_="num", default_value=0.5),
-    SynthParameter(  # TODO: change to num with cardinality=4
+    SynthParameter(  # TODO: change type from "cat" to "num"
         index=40,
         name="transpose",
-        type_="cat",
+        type_="num",
+        # type_="cat",
         default_value=0.5,
         cardinality=4,
         cat_values=(0.0, 0.5, 0.75, 1.0),
@@ -89,7 +90,8 @@ SYNTH_PARAMETERS = (
     # SynthParameter(index=69, name="panic", type_="bin"),
     # SynthParameter(index=70, name="midi_learn", type_="bin"),
     SynthParameter(index=71, name="envelope_destination", type_="cat", cardinality=8),
-    SynthParameter(index=72, name="envelope_speed", type_="cat", cardinality=6),  # TODO: changege to num
+    SynthParameter(index=72, name="envelope_speed", type_="num", cardinality=6),
+    # SynthParameter(index=72, name="envelope_speed", type_="cat", cardinality=6),
     SynthParameter(index=73, name="envelope_amount", type_="num"),
     SynthParameter(index=74, name="envelope_one_shot_mode", type_="bin"),
     SynthParameter(index=75, name="envelope_fix_tempo", type_="bin"),

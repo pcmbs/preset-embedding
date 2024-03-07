@@ -68,7 +68,7 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
     audio_fe.eval()
 
     p_helper = PresetHelper(
-        synth_name=cfg.synth.name, params_to_exclude_str=cfg.synth.parameters_to_exclude_str
+        synth_name=cfg.synth.name, parameters_to_exclude=cfg.synth.parameters_to_exclude_str
     )
 
     dataset = SynthDataset(
@@ -87,7 +87,7 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
             saved_data = torch.load(f)
             resume_index = saved_data["resume_index"]
             audio_embeddings = saved_data["audio_embeddings"]
-            synth_params = saved_data["synth_params"]
+            synth_parameters = saved_data["synth_parameters"]
 
         offset_index = resume_index - start_index  # update offset index
         start_index = resume_index  # overwrite start index to resume
@@ -128,14 +128,14 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
             torch.save(configs_dict, f)
 
         log.info("\nSynth parameters description")
-        for param in dataset.used_params_description:
+        for param in dataset.used_parameters_description:
             log.info(param)
 
         with open(Path.cwd() / "synth_parameters_description.pkl", "wb") as f:
-            torch.save(dataset.used_params_description, f)
+            torch.save(dataset.used_parameters_description, f)
 
         audio_embeddings = torch.empty((end_index - start_index, audio_fe.out_features), device="cpu")
-        synth_params = torch.empty((end_index - start_index, dataset.num_used_parameters), device="cpu")
+        synth_parameters = torch.empty((end_index - start_index, dataset.num_used_parameters), device="cpu")
 
     if start_index != 0 or end_index != cfg.dataset_size:
         dataset = Subset(dataset, range(start_index, end_index))
@@ -157,6 +157,8 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
     )
 
     for i, (params, audio, _) in enumerate(pbar):
+        if cfg.synth.name in ["diva", "dexed"]:  # to keep track of progress since they spam the terminal
+            log.info(f"Generating batch {i}/{(end_index - start_index) // cfg.batch_size - 1}")
         slice_start = i * cfg.batch_size + offset_index
         slice_end = slice_start + params.shape[0]  # instead of batch size since drop_last=False
 
@@ -165,7 +167,7 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
             audio_emb = audio_fe(audio)
 
         audio_embeddings[slice_start:slice_end] = audio_emb.cpu()
-        synth_params[slice_start:slice_end] = params.cpu()
+        synth_parameters[slice_start:slice_end] = params.cpu()
 
         if (cfg.export_audio > start_index + slice_start) or (cfg.export_audio == -1):
             for j, sample in enumerate(audio):
@@ -192,7 +194,7 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
             saved_data = {
                 "resume_index": new_starting_index,
                 "audio_embeddings": audio_embeddings,
-                "synth_params": synth_params,
+                "synth_parameters": synth_parameters,
             }
             torch.save(saved_data, f)
         log.info("Exiting Python program...")
@@ -202,20 +204,20 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
     if (Path.cwd() / "resume_state.pkl").exists():
         (Path.cwd() / "resume_state.pkl").unlink()
 
-    # Save the audio_embeddings and synth_params
+    # Save the audio_embeddings and synth_parameters
     # take start_index from the configs since was changed if interrupted
     filename_suffix = f"_{cfg.start_index}_{cfg.end_index-1}" if is_subset else ""
 
     log.info(
         f"All samples generated, "
-        f"saving audio_embeddings{filename_suffix}.pkl and synth_params{filename_suffix}.pkl..."
+        f"saving audio_embeddings{filename_suffix}.pkl and synth_parameters{filename_suffix}.pkl..."
     )
 
     with open(Path.cwd() / f"audio_embeddings{filename_suffix}.pkl", "wb") as f:
         torch.save(audio_embeddings, f)
 
-    with open(Path.cwd() / f"synth_params{filename_suffix}.pkl", "wb") as f:
-        torch.save(synth_params, f)
+    with open(Path.cwd() / f"synth_parameters{filename_suffix}.pkl", "wb") as f:
+        torch.save(synth_parameters, f)
 
     log.info("Export completed successfully!")
 

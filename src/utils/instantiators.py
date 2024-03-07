@@ -5,7 +5,7 @@ Helper functions for instantiating lightning callbacks from DictConfig objects.
 Source: https://github.com/ashleve/lightning-hydra-template
 """
 
-from typing import List, Tuple
+from typing import List
 
 import hydra
 from lightning import Callback
@@ -71,7 +71,7 @@ def check_val_dataset(train_dataset: Dataset, val_dataset: Dataset) -> None:
     assert (
         val_dataset.configs_dict["params_to_exclude"] == train_dataset.configs_dict["params_to_exclude"]
     ), "the params_to_exclude used for training and validation should be the same."
-    assert val_dataset.num_used_synth_params == train_dataset.num_used_synth_params
+    assert val_dataset.num_used_synth_parameters == train_dataset.num_used_synth_parameters
     for attr in ["render_duration_in_sec", "midi_note", "midi_velocity", "midi_duration_in_sec"]:
         assert (
             val_dataset.configs_dict[attr] == train_dataset.configs_dict[attr]

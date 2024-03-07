@@ -1,0 +1,4 @@
+# enter the path to the pkl dataset folder for the MMR validation
+path: ${paths.root_dir}/data/datasets/eval/talnm_mn04_eval_v1
+
+name: talnm_mn04_v1

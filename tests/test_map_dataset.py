@@ -8,7 +8,7 @@ from utils.synth import PresetHelper
 @pytest.fixture
 def tal_preset_helper():
     """Return a PresetHelper instance for the TAL-NoiseMaker synthesizer"""
-    params_to_exclude_str = (
+    parameters_to_exclude = (
         "master_volume",
         "voices",
         "lfo_1_sync",
@@ -21,7 +21,7 @@ def tal_preset_helper():
         "delay*",
     )
 
-    return PresetHelper("tal_noisemaker", params_to_exclude_str)
+    return PresetHelper("talnm", parameters_to_exclude)
 
 
 @pytest.mark.parametrize("seed_offset", [0, 5423, 10254])

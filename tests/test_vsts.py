@@ -17,7 +17,7 @@ def talnm_engine():
         render_duration_in_sec=4,
         synth_path=str(PLUGINS_FOLDER / "TAL-NoiseMaker.vst3"),
     )
-    renderer.set_midi_params(60, 100, 4.0)
+    renderer.set_midi_parameters(60, 100, 4.0)
     return renderer
 
 
@@ -29,7 +29,7 @@ def diva_engine():
         render_duration_in_sec=4,
         synth_path=str(PLUGINS_FOLDER / "Diva.vst3"),
     )
-    renderer.set_midi_params(60, 100, 4.0)
+    renderer.set_midi_parameters(60, 100, 4.0)
     return renderer
 
 

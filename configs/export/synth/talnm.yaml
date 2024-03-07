@@ -1,7 +1,7 @@
 ### PresetHelper settings
 
 # synthesizer used to generate the dataset
-name: tal_noisemaker
+name: talnm
 
 # synthesizer parameters to exclude when generating presets
 parameters_to_exclude_str: 

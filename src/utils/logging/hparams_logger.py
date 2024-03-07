@@ -45,7 +45,7 @@ def log_hyperparameters(object_dict: Dict[str, Any]) -> None:
     hparams["train_dataset/embedding_dim"] = train_dataset.embedding_dim
     hparams["train_dataset/excl_synth_params"] = train_dataset.configs_dict["params_to_exclude"]
     hparams["train_dataset/name"] = train_dataset.name
-    hparams["train_dataset/num_used_synth_params"] = train_dataset.num_used_synth_params
+    hparams["train_dataset/num_used_synth_params"] = train_dataset.num_used_synth_parameters
     hparams["train_dataset/midi_duration_in_sec"] = train_dataset.configs_dict["midi_duration_in_sec"]
     hparams["train_dataset/midi_note"] = train_dataset.configs_dict["midi_note"]
     hparams["train_dataset/midi_velocity"] = train_dataset.configs_dict["midi_velocity"]
