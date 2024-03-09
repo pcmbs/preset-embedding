@@ -1,0 +1,10 @@
+cfg:
+  _target_: models.preset.mlp_hw_oh
+  hidden_features: 512
+  num_blocks: 12
+  block_kwargs: 
+    dropout_p: 0.0
+
+name: mlp_hw_oh_talnm_s_e1
+
+ckpt_name: mlp_hw_oh_talnm_s_e0_mrr0.9820.ckpt

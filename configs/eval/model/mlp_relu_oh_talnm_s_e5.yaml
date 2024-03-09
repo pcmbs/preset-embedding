@@ -5,4 +5,6 @@ cfg:
   block_kwargs: 
     dropout_p: 0.0
 
-name: mlp_relu_oh
+name: mlp_relu_oh_talnm_s_e5
+
+ckpt_name: mlp_relu_oh_talnm_s_e4_mrr0.9823.ckpt

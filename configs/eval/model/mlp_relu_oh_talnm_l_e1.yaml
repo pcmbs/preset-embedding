@@ -1,0 +1,10 @@
+cfg:
+  _target_: models.preset.mlp_relu_oh
+  hidden_features: 3072 
+  num_blocks: 2
+  block_kwargs: 
+    dropout_p: 0.0
+
+name: mlp_relu_oh_talnm_l_e1
+
+ckpt_name: mlp_relu_oh_talnm_l_e0_mrr0.9704.ckpt

@@ -2,14 +2,15 @@
 
 defaults:
   - _self_
-  - m_preset: mlp_relu_raw
+  - synth: talnm
   - search_space: mlp_all
+  - m_preset: mlp_relu_raw
   - sampler: qmc_tpe
   - pruner: nop
 
 # paths to train and val datasets for HPO
-path_to_train_dataset: ${paths.root_dir}/data/datasets/talnm_mn04_size=1000000_seed=300_hpo_v1
-path_to_val_dataset: ${paths.root_dir}/data/datasets/talnm_mn04_size=65536_seed=400_hpo_val_v1
+path_to_train_dataset: ${paths.root_dir}/data/datasets/${synth.name}_mn04_size=1000000_seed=300_hpo_v1
+path_to_val_dataset: ${paths.root_dir}/data/datasets/${synth.name}_mn04_size=65536_seed=400_hpo_val_v1
 
 # tag for the study, which will be added to the name of the study. 
 # Note that if the study already exists, it will be resumed.
@@ -35,7 +36,7 @@ metric_to_optimize: val/mrr
 batch_size: 512
 
 # number of workers for the train and val dataloader
-num_workers: 8
+num_workers: 0
 num_ranks_mrr: 512
 
 # kwargs for lightning trainer
@@ -59,7 +60,7 @@ lr_scheduler:
 
 ############ Artifacts
 # name of the optuna study
-study_name: ${m_preset.name}_${tag}
+study_name: ${synth.name}_${m_preset.name}_${tag}
 
 ############ Hydra configs
 paths:
@@ -68,9 +69,9 @@ paths:
 
 hydra:
   run:
-    dir: ${paths.root_dir}/logs/optuna/${m_preset.name}_${tag}
+    dir: ${paths.root_dir}/logs/optuna/${synth.name}_${m_preset.name}_${tag}
   sweep:
-    dir:  ${paths.root_dir}/logs/optuna/${m_preset.name}_${tag}
+    dir:  ${paths.root_dir}/logs/optuna/${synth.name}_${m_preset.name}_${tag}
     subdir: ${hydra.job.num}
 
   job: 

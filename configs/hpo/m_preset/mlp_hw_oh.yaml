@@ -1,14 +1,14 @@
 # @package _global_
 
 defaults:
-  - override /search_space: mlp
+  - override /search_space: mlp_hw
 
 m_preset:
   cfg:
-    _target_: models.preset.mlp_relu_raw
+    _target_: models.preset.mlp_hw_oh
     # hidden_features: 1024 # passes at runtime by optuna
     # num_blocks: 2 # passes at runtime by optuna
     block_kwargs: 
       dropout_p: 0.0
   
-  name: mlp_relu_raw
+  name: mlp_hw_oh

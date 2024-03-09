@@ -110,6 +110,17 @@ class PresetHelper:
         return self._used_num_parameters_idx + self._used_bin_parameters_idx
 
     @property
+    def used_cat_parameters_idx(self) -> List[int]:
+        """
+        Return the indices of the categorical synthesizer parameters
+        relative to the used parameters.
+
+        Used synthesizer parameters refer to parameters that are allowed
+        to vary across training samples and are thus inputs to the preset encoder.
+        """
+        return self._used_cat_parameters_idx
+
+    @property
     def grouped_used_parameters(self) -> dict:
         """
         Return a dictionary of the used synthesizer parameters grouped by types (`continuous` or `discrete`).

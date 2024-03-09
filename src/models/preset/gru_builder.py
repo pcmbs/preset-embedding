@@ -2,11 +2,8 @@ from typing import Dict, Optional
 import torch
 from torch import nn
 
-from models.preset.embedding_layers import RawParameters, OneHotEncoding
+from models.preset.embedding_layers import OneHotEncoding
 from utils.synth import PresetHelper
-
-
-# TODO: init and reset h0
 
 
 class GRUBuilder(nn.Module):
@@ -16,7 +13,7 @@ class GRUBuilder(nn.Module):
         embedding_layer: nn.Module,
         hidden_features: int = 1024,
         num_layers: int = 2,
-        out_block_activation: str = "ReLU",
+        dropout_p: float = 0.0,
         pre_norm: bool = False,
         embedding_kwargs: Optional[Dict] = None,
     ) -> None:
@@ -33,19 +30,15 @@ class GRUBuilder(nn.Module):
             num_layers=num_layers,
             bidirectional=True,
             batch_first=True,
+            dropout=dropout_p,
         )
-
-        # initial learnable hidden state
-        # self.h0 = nn.Parameter(torch.zeros(num_layers * 2, 1, hidden_features))
-
-        self.out_block_act_fn = getattr(nn, out_block_activation)()
 
         self.out_block = nn.Sequential(
             nn.Linear(
                 in_features=hidden_features,
                 out_features=hidden_features,
             ),
-            self.out_block_act_fn,
+            nn.ReLU(),
             nn.Linear(in_features=hidden_features, out_features=out_features),
         )
 
@@ -70,11 +63,11 @@ class GRUBuilder(nn.Module):
             elif "bias" in name:
                 nn.init.zeros_(param)
 
-            for name, param in self.gru.named_parameters():
-                if "weight" in name:
-                    nn.init.kaiming_normal_(param, mode="fan_in", nonlinearity="linear")
-                elif "bias" in name:
-                    nn.init.zeros_(param)
+        for name, param in self.out_block.named_parameters():
+            if "weight" in name:
+                nn.init.kaiming_normal_(param, mode="fan_in", nonlinearity="relu")
+            elif "bias" in name:
+                nn.init.zeros_(param)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         n = x.shape[0]  # batch size
@@ -91,16 +84,16 @@ class GRUBuilder(nn.Module):
         return x
 
 
-def gru_relu_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
+def gru_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
     """
-    Bi-GRU with ReLU activation for the output block and One-Hot encoded categorical synthesizer parameters.
+    Bi-GRU with One-Hot encoded categorical synthesizer parameters.
     """
     return GRUBuilder(
         out_features=out_features,
         embedding_layer=OneHotEncoding,
         hidden_features=kwargs.get("hidden_features", 1024),
         num_layers=kwargs.get("num_layers", 2),
-        out_block_activation=kwargs.get("out_block_activation", "ReLU"),
+        dropout_p=kwargs.get("dropout_p", 0.0),
         embedding_kwargs={"preset_helper": preset_helper},
     )
 
@@ -135,11 +128,15 @@ if __name__ == "__main__":
     dataset = SynthDatasetPkl(path_to_dataset=DATASET_PATH, mmap=False)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    model = gru_relu_oh(
+    model = gru_oh(
         out_features=OUT_FEATURES,
         preset_helper=p_helper,
+        hidden_features=1536,
+        num_layers=4,
     )
     print(model)
+    print(f"num parameters: {model.num_parameters}")
+
     for name, param in model.named_parameters():
         print(f"{name}: {param.shape}")
 

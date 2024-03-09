@@ -2,8 +2,13 @@ import pytest
 import torch
 from torch import nn
 
-from models.preset.mlp_builder import mlp_snn_raw, mlp_relu_raw, mlp_relu_oh
-from models.preset.block_layers import SelfNormalizingBlock, BatchNormReLUBlock
+from models.preset.mlp_builder import (
+    mlp_snn_raw,
+    mlp_relu_raw,
+    mlp_relu_oh,
+    SelfNormalizingBlock,
+    BatchNormReLUBlock,
+)
 from utils.synth import PresetHelper
 
 

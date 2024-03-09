@@ -1,0 +1,13 @@
+# @package _global_
+
+defaults:
+  - override /search_space: gru
+
+m_preset:
+  cfg:
+    _target_: models.preset.gru_oh
+    # hidden_features: 1024 # passes at runtime by optuna
+    # num_layers: 2 # passes at runtime by optuna
+    dropout_p: 0.0
+
+  name: gru_oh

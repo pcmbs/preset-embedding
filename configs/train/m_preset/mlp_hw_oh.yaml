@@ -1,0 +1,8 @@
+cfg:
+  _target_: models.preset.mlp_hw_oh
+  hidden_features: 1024
+  num_blocks: 6
+  block_kwargs: 
+    dropout_p: 0.0
+
+name: mlp_hw_oh

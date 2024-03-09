@@ -77,7 +77,7 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
     )
 
     # instantiate validation Dataset & DataLoader
-    val_dataset = SynthDatasetPkl(cfg.path_to_val_dataset, mmap=False)
+    val_dataset = SynthDatasetPkl(cfg.path_to_val_dataset)
     val_loader = DataLoader(
         val_dataset, batch_size=cfg.num_ranks_mrr, num_workers=cfg.num_workers, shuffle=False
     )
@@ -89,13 +89,24 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
     )
 
     # instantiate preset encoder
-    preset_encoder: nn.Module = hydra.utils.instantiate(
-        cfg.m_preset.cfg,
-        out_features=train_dataset.embedding_dim,
-        preset_helper=preset_helper,
-        num_blocks=hps["num_blocks"],
-        hidden_features=hps["hidden_features"],
-    )
+    if cfg.m_preset.name.startswith("mlp"):
+        preset_encoder: nn.Module = hydra.utils.instantiate(
+            cfg.m_preset.cfg,
+            out_features=train_dataset.embedding_dim,
+            preset_helper=preset_helper,
+            num_blocks=hps["num_blocks"],
+            hidden_features=hps["hidden_features"],
+        )
+    elif cfg.m_preset.name.startswith("gru"):
+        preset_encoder: nn.Module = hydra.utils.instantiate(
+            cfg.m_preset.cfg,
+            out_features=train_dataset.embedding_dim,
+            preset_helper=preset_helper,
+            num_layers=hps["num_layers"],
+            hidden_features=hps["hidden_features"],
+        )
+    else:
+        raise NotImplementedError(f"preset encoder {cfg.m_preset.name} not implemented!")
 
     # instantiate optimizer, lr_scheduler, and scheduler_config
     beta1 = hps.get("beta1", 0.9)
