@@ -77,6 +77,11 @@ class Tokenizer(nn.Module):
         return cat_offsets, total_num_cat
 
     def forward(self, x):
+        # move instance attribute to device of input tensor (should only be done during the first forward pass)
+        device = x.device
+        if self.cat_offsets.device != device:
+            self.cat_offsets = self.cat_offsets.to(device)
+
         tokens = torch.zeros((*x.shape, self._embedding_dim), device=x.device)
 
         # Assign noncat embeddings
@@ -118,6 +123,8 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     from data.datasets import SynthDatasetPkl
 
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
     DATASET_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "datasets"
     DATASET_PATH = DATASET_FOLDER / "talnm_mn04_size=65536_seed=45858_dev_val_v1"
 
@@ -143,10 +150,11 @@ if __name__ == "__main__":
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     tokenizer = Tokenizer(p_helper, EMB_DIM)
+    tokenizer.to(DEVICE)
 
     start = timer()
     for synth_params, _ in loader:
-        tokens = tokenizer(synth_params)
+        tokens = tokenizer(synth_params.to(DEVICE))
     print(f"Total time: {timer() - start}")
     print(f"Tokenizer parameters: {sum(p.numel() for p in tokenizer.parameters())}")
     print("")

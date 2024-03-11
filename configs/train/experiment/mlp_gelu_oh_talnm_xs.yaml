@@ -3,30 +3,28 @@
 defaults:
   - override /train_dataset: talnm_mn04_v1
   - override /val_dataset: talnm_mn04_v1
-  - override /m_preset: mlp_relu_oh
+  - override /m_preset: mlp_gelu_oh
 
 
 ########## hyperparameters 
-# 1st Best trial from QMC+TPE HPO
 
-m_preset:
+m_preset: # 406_464 parameters
   cfg:
-    hidden_features: 3072
-    num_blocks: 2
+    hidden_features: 256
+    num_blocks: 3
 
 solver:
-  lr: 9.30e-3
+  lr: 7.094e-3
   optimizer:
     betas:
-      - 0.854
-      - 0.976
-    eps: 9.93e-10
+      - 0.859
+      - 0.887
+    eps: 1.197e-10
 
   scheduler:
     total_steps: 20000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
-    milestone: 947 # keep milestone from HPO (although 1953 steps, let see)
-    final_lr: 4.68e-6
-
+    milestone: 7500
+    final_lr: 3.02e-5
 
 ########## training setup
 train_dataset:

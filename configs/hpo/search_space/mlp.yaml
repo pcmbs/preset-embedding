@@ -32,7 +32,7 @@ base_lr:
   kwargs:
     name: base_lr
     low: 0.0001
-    high: 0.01
+    high: 0.02
     log: true
 
 # scheduler final lr
@@ -40,7 +40,7 @@ min_lr:
   type: float
   kwargs:
     name: min_lr
-    low: 0.0000000001
+    low: 1e-10
     high: 0.01
     log: true
 
@@ -51,7 +51,7 @@ beta1:
   type: float
   kwargs:
     name: beta1
-    low: 0.8
+    low: 0.75
     high: 0.999
     step: 0.001
 
@@ -60,7 +60,7 @@ beta2:
   type: float
   kwargs:
     name: beta2
-    low: 0.90
+    low: 0.85
     high: 0.999
     step: 0.001
 

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from data.datasets import SynthDataset
-from models.preset.embedding_layers import RawParameters, OneHotEncoding
+from models.preset.embedding_layers import RawParameters, OneHotEncoding2
 from utils.synth import PresetHelper
 
 NUM_SAMPLES = 32
@@ -83,13 +83,13 @@ def test_onehot_params_emb_layer(tal_dataset):
 
     loader = DataLoader(tal_dataset, batch_size=NUM_SAMPLES, shuffle=False)
 
-    emb_layer = OneHotEncoding(preset_helper=tal_dataset.preset_helper)
+    emb_layer = OneHotEncoding2(preset_helper=tal_dataset.preset_helper)
 
     params, _, _ = next(iter(loader))
 
     onehot_params_emb = emb_layer(params.clone())
 
-    offset = emb_layer.num_noncat_parameters
+    offset = emb_layer.num_noncat
 
     for (cat_values, _), indices in tal_dataset.preset_helper.grouped_used_parameters["discrete"][
         "cat"

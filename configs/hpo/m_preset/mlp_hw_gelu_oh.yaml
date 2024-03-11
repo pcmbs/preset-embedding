@@ -1,0 +1,16 @@
+# @package _global_
+
+defaults:
+  - override /search_space: mlp_hw
+
+m_preset:
+  cfg:
+    _target_: models.preset.mlp_hw_oh
+    # hidden_features: 1024 # passes at runtime by optuna
+    # num_blocks: 2 # passes at runtime by optuna
+    block_kwargs: 
+      norm: LayerNorm
+      act_fn: GELU
+      dropout_p: 0.0
+  
+  name: mlp_hw_gelu_oh

@@ -13,73 +13,47 @@ from utils.synth import PresetHelper
 #################### BUILDING BLOCKS ####################
 
 
-class SelfNormalizingBlock(nn.Module):
-    """Self-Normalizing MLP block as proposed in https://arxiv.org/pdf/1706.02515.pdf"""
+class MLPBlock(nn.Module):
+    """
+    (Linear -> norm -> act_fn -> Dropout) * 2
+    """
 
     def __init__(
-        self, in_features: int, out_features: int, hidden_features: Optional[int] = None, dropout_p=0.0
+        self,
+        in_features: int,
+        out_features: int,
+        hidden_features: Optional[int] = None,
+        norm: str = "BatchNorm1d",
+        act_fn: str = "ReLU",
+        dropout_p=0.0,
     ) -> None:
         """
-        Self-Normalizing MLP block as proposed in https://arxiv.org/pdf/1706.02515.pdf.
-        Original Pytorch implementation:
-        https://github.com/bioinf-jku/SNNs/blob/master/Pytorch/SelfNormalizingNetworks_MLP_MNIST.ipynb
+        (Linear -> norm -> act_fn -> Dropout) * 2
 
         Args
         - `in_features` (int): number of input features
         - `out_features` (int): number of output features
         - `hidden_features` (int): number of hidden features. Set to `out_features` if not None (Default: None)
-        - `dropout_p` (float): Alpha dropout probability
-        """
-        super().__init__()
-        hidden_features = out_features if hidden_features is None else hidden_features
-
-        self.snn_block = nn.Sequential(
-            nn.Linear(in_features=in_features, out_features=hidden_features),
-            nn.SELU(),
-            nn.AlphaDropout(p=dropout_p),
-            nn.Linear(in_features=hidden_features, out_features=out_features),
-            nn.SELU(),
-            nn.AlphaDropout(p=dropout_p),
-        )
-
-    def init_weights(self) -> None:
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="linear")
-                nn.init.zeros_(m.bias)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.snn_block(x)
-
-
-class BatchNormReLUBlock(nn.Module):
-    """
-    (Linear -> BatchNorm -> ReLU -> Dropout) * 2
-    """
-
-    def __init__(
-        self, in_features: int, out_features: int, hidden_features: Optional[int] = None, dropout_p=0.0
-    ) -> None:
-        """
-        (Linear -> BatchNorm -> ReLU -> Dropout) * 2
-
-        Args
-        - `in_features` (int): number of input features
-        - `out_features` (int): number of output features
-        - `hidden_features` (int): number of hidden features. Set to `out_features` if not None (Default: None)
+        - `norm` (nn.Module): normalization layer. Must be nn.LayerNorm or nn.BatchNorm1d
+        - `act_fn` (nn.Module): activation function
         - `dropout_p` (float): dropout probability
         """
         super().__init__()
         hidden_features = out_features if hidden_features is None else hidden_features
 
-        self.bnr_block = nn.Sequential(
+        self.act_fn = getattr(nn, act_fn)
+        if norm not in ["LayerNorm", "BatchNorm1d"]:
+            raise ValueError(f"norm must be 'LayerNorm' or 'BatchNorm1d', got {norm}")
+        self.norm = getattr(nn, norm)
+
+        self.block = nn.Sequential(
             nn.Linear(in_features=in_features, out_features=hidden_features, bias=False),
-            nn.BatchNorm1d(hidden_features),
-            nn.ReLU(),
+            self.norm(hidden_features),
+            self.act_fn(),
             nn.Dropout(p=dropout_p),
             nn.Linear(in_features=hidden_features, out_features=out_features, bias=False),
-            nn.BatchNorm1d(out_features),
-            nn.ReLU(),
+            self.norm(out_features),
+            self.act_fn(),
             nn.Dropout(p=dropout_p),
         )
 
@@ -87,55 +61,12 @@ class BatchNormReLUBlock(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Linear):
                 nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
-            if isinstance(m, nn.BatchNorm1d):
+            if isinstance(m, (nn.BatchNorm1d, nn.LayerNorm)):
                 nn.init.ones_(m.weight)
                 nn.init.zeros_(m.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.bnr_block(x)
-
-
-class LayerNormGELUBlock(nn.Module):
-    """
-    (Linear -> LayerNorm -> GELU -> Dropout) * 2
-    """
-
-    def __init__(
-        self, in_features: int, out_features: int, hidden_features: Optional[int] = None, dropout_p=0.0
-    ) -> None:
-        """
-        (Linear -> LayerNorm -> GELU -> Dropout) * 2
-
-        Args
-        - `in_features` (int): number of input features
-        - `out_features` (int): number of output features
-        - `hidden_features` (int): number of hidden features. Set to `out_features` if not None (Default: None)
-        - `dropout_p` (float): dropout probability
-        """
-        super().__init__()
-        hidden_features = out_features if hidden_features is None else hidden_features
-
-        self.lng_block = nn.Sequential(
-            nn.Linear(in_features=in_features, out_features=hidden_features, bias=False),
-            nn.LayerNorm(hidden_features),
-            nn.GELU(),
-            nn.Dropout(p=dropout_p),
-            nn.Linear(in_features=hidden_features, out_features=out_features, bias=False),
-            nn.LayerNorm(out_features),
-            nn.GELU(),
-            nn.Dropout(p=dropout_p),
-        )
-
-    def init_weights(self) -> None:
-        for m in self.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
-            if isinstance(m, nn.LayerNorm):
-                nn.init.ones_(m.weight)
-                nn.init.zeros_(m.bias)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.lng_block(x)
+        return self.block(x)
 
 
 class HighwayBlock(nn.Module):
@@ -144,16 +75,20 @@ class HighwayBlock(nn.Module):
         self,
         in_features: int,
         out_features: Optional[int] = None,
+        norm: str = "BatchNorm1d",
+        act_fn: str = "ReLU",
         dropout_p: float = 0.0,
     ) -> None:
         """
-        Highway MLP Block with LayerNorm and GELU activation.
+        Highway MLP Block.
 
         Args
         - `in_features` (int): number of input features
         - `out_features` (int): number of output features.
         If different from `in_features` the residual connection and gates are removed,
         uch that the output is GELU(LayerNorm(FC(x))).
+        - `norm` (nn.Module): normalization layer. Must be nn.LayerNorm or nn.BatchNorm1d
+        - `act_fn` (nn.Module): activation function
         - `dropout_p` (float): dropout probability
         """
         super().__init__()
@@ -162,10 +97,15 @@ class HighwayBlock(nn.Module):
         self.has_residual = self.in_features == self.out_features
         self.dropout_p = dropout_p
 
+        self.act_fn = getattr(nn, act_fn)
+        if norm not in ["LayerNorm", "BatchNorm1d"]:
+            raise ValueError(f"norm must be 'LayerNorm' or 'BatchNorm1d', got {norm}")
+        self.norm = getattr(nn, norm)
+
         self.fc = nn.Sequential(
             nn.Linear(in_features=self.in_features, out_features=self.out_features, bias=False),
-            nn.LayerNorm(self.out_features),
-            nn.GELU(),
+            self.norm(self.out_features),
+            self.act_fn(),
         )
 
         if self.has_residual:
@@ -178,7 +118,7 @@ class HighwayBlock(nn.Module):
         self.init_weights()
 
     def init_weights(self) -> None:
-        # FC layer (linear layer and layer norm)
+        # FC layer (linear and normalization layers)
         nn.init.kaiming_normal_(self.fc[0].weight, mode="fan_in", nonlinearity="relu")
         nn.init.ones_(self.fc[1].weight)
         nn.init.zeros_(self.fc[1].bias)
@@ -267,84 +207,39 @@ class MlpBuilder(nn.Module):
 #################### MODELS ####################
 
 
-def mlp_snn_raw(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
-    """
-    MLP with Self-Normalizing Blocks and raw parameter values in range [0,1].
-    """
-    return MlpBuilder(
-        out_features=out_features,
-        embedding_layer=RawParameters,
-        block_layer=SelfNormalizingBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
-        block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
-        embedding_kwargs={"preset_helper": preset_helper},
-    )
-
-
-def mlp_relu_raw(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
+def mlp_raw(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
     """
     MLP with BatchNorm+ReLU blocks and and raw parameter values in range [0,1].
     """
     return MlpBuilder(
         out_features=out_features,
         embedding_layer=RawParameters,
-        block_layer=BatchNormReLUBlock,
+        block_layer=MLPBlock,
         hidden_features=kwargs.get("hidden_features", 1024),
         num_blocks=kwargs.get("num_blocks", 2),
-        block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
+        block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
         embedding_kwargs={"preset_helper": preset_helper},
     )
 
 
-def mlp_relu_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
+def mlp_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
     """
-    MLP with BatchNorm+ReLU blocks and and One-Hot encoded categorical synthesizer parameters.
+    MLP with One-Hot encoded categorical synthesizer parameters.
     """
     return MlpBuilder(
         out_features=out_features,
         embedding_layer=OneHotEncoding,
-        block_layer=BatchNormReLUBlock,
+        block_layer=MLPBlock,
         hidden_features=kwargs.get("hidden_features", 1024),
         num_blocks=kwargs.get("num_blocks", 2),
-        block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
-        embedding_kwargs={"preset_helper": preset_helper},
-    )
-
-
-def mlp_gelu_raw(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
-    """
-    MLP with LayerNorm+GeLU blocks and and raw parameter values in range [0,1].
-    """
-    return MlpBuilder(
-        out_features=out_features,
-        embedding_layer=RawParameters,
-        block_layer=LayerNormGELUBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
-        block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
-        embedding_kwargs={"preset_helper": preset_helper},
-    )
-
-
-def mlp_gelu_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
-    """
-    MLP with LayerNorm+GeLU blocks and and One-Hot encoded categorical synthesizer parameters.
-    """
-    return MlpBuilder(
-        out_features=out_features,
-        embedding_layer=OneHotEncoding,
-        block_layer=LayerNormGELUBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
-        block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
+        block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
         embedding_kwargs={"preset_helper": preset_helper},
     )
 
 
 def mlp_hw_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
     """
-    Highway MLP with LayerNorm+ReLU activation and One-Hot encoded categorical synthesizer parameters.
+    Highway MLP and One-Hot encoded categorical synthesizer parameters.
     """
     return MlpBuilder(
         out_features=out_features,
@@ -352,7 +247,7 @@ def mlp_hw_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Mo
         block_layer=HighwayBlock,
         hidden_features=kwargs.get("hidden_features", 1024),
         num_blocks=kwargs.get("num_blocks", 2),
-        block_kwargs=kwargs.get("block_kwargs", {"dropout_p": 0.0}),
+        block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
         embedding_kwargs={"preset_helper": preset_helper},
     )
 
@@ -373,7 +268,6 @@ if __name__ == "__main__":
     )
 
     p_helper = PresetHelper("talnm", PARAMETERS_TO_EXCLUDE_STR)
-    # model = mlp_gelu_oh(192, p_helper)
     model = mlp_hw_oh(192, p_helper, num_blocks=12, hidden_features=1024)
     print(model)
     print(model.num_parameters)

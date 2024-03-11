@@ -2,9 +2,9 @@
 """
 Module implementing embedding layers for the preset encoder.
 """
+from typing import Tuple
 import torch
 from torch import nn
-import torch.nn.functional as F
 
 from utils.synth import PresetHelper
 
@@ -57,7 +57,7 @@ class RawParameters(nn.Module):
         self.cat_parameters = self._group_cat_parameters_per_values()
 
     @property
-    def out_lenght(self) -> int:
+    def out_length(self) -> int:
         return self._out_length
 
     @property
@@ -108,14 +108,14 @@ class OneHotEncoding(nn.Module):
         self._grouped_used_parameters = preset_helper.grouped_used_parameters
 
         # used numerical and binary parameters indices
-        self.noncat_parameters = preset_helper.used_noncat_parameters_idx
-        self.num_noncat_parameters = len(self.noncat_parameters)
+        self.noncat_idx = torch.tensor(preset_helper.used_noncat_parameters_idx, dtype=torch.long)
+        self.num_noncat = len(self.noncat_idx)
 
-        self.cat_parameters = self._group_cat_parameters_per_cardinality()
+        # used categorical parameters
+        self.cat_idx = torch.tensor(preset_helper.used_cat_parameters_idx, dtype=torch.long)
+        self.cat_offsets, self.total_num_cat = self._compute_cat_infos(preset_helper)
 
-        self._out_length = int(
-            sum(card * len(indices) for card, indices in self.cat_parameters) + self.num_noncat_parameters
-        )
+        self._out_length = self.total_num_cat + self.num_noncat
 
     @property
     def out_length(self) -> int:
@@ -131,47 +131,61 @@ class OneHotEncoding(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # move instance attribute to device of input tensor (should only be done during the first forward pass)
         device = x.device
-        if self.cat_parameters[0][1].device != device:
-            self.cat_parameters = [(card, idx.to(device)) for (card, idx) in self.cat_parameters]
+        if self.cat_offsets.device != device:
+            self.cat_offsets = self.cat_offsets.to(device)
 
-        emb = torch.empty(x.shape[0], self.out_length, device=device)
-        emb[..., : self.num_noncat_parameters] = x[..., self.noncat_parameters]
+        oh_enc = torch.zeros(x.shape[0], self.out_length, device=device)
 
-        # Calculate and assign categorical embeddings
-        emb_index = self.num_noncat_parameters
-        for card, idx in self.cat_parameters:
-            cat_emb = F.one_hot(x[..., idx].to(torch.long), num_classes=card).view(x.shape[0], -1)
-            emb[..., emb_index : emb_index + cat_emb.shape[1]] = cat_emb
-            emb_index += cat_emb.shape[1]
+        # Assign noncat parameters
+        oh_enc[:, : self.num_noncat] = x[:, self.noncat_idx]
 
-        return emb
+        # Calculate and assign ones for categorical
+        ones_idx = x[:, self.cat_idx].to(dtype=torch.long) + self.cat_offsets + self.num_noncat
+        oh_enc.scatter_(1, ones_idx, 1)
+        # equivalent to oh_enc[torch.arange(x.shape[0]).unsqueeze(1), ones_idx] = 1
 
-    def _group_cat_parameters_per_cardinality(self):
-        cat_parameters_card_dict = {}
-        for (cat_values, _), indices in self._grouped_used_parameters["discrete"]["cat"].items():
-            # create copy of the indices list to not modify the original ones
-            indices = indices.copy()
-            num_values = len(cat_values)
-            if num_values in cat_parameters_card_dict:
-                cat_parameters_card_dict[num_values] += indices
-            else:
-                cat_parameters_card_dict[num_values] = indices
+        return oh_enc
 
-        return [
-            (cat_card, torch.tensor(indices, dtype=torch.long))
-            for cat_card, indices in cat_parameters_card_dict.items()
-        ]
-        # return deepcopy(cat_params_card_dict)
+    def _compute_cat_infos(self, preset_helper: PresetHelper) -> Tuple[torch.Tensor, int]:
+        """
+        Compute the offsets for each categorical parameter and the total number of categories
+        (i.e., sum over all categorical parameters' cardinality).
+
+        Args
+        - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
+
+        Returns
+        - `cat_offsets` (torch.Tensor): the offsets for each categorical parameter as a list cat_offsets[cat_param_idx] = offset.
+        - `total_num_cat` (int):  total number of categories.
+        """
+        cat_offsets = []
+        offset = 0
+        for (cat_values, _), indices in preset_helper.grouped_used_parameters["discrete"]["cat"].items():
+            for _ in indices:
+                cat_offsets.append(offset)
+                offset += len(cat_values)
+        total_num_cat = offset
+        cat_offsets = torch.tensor(cat_offsets, dtype=torch.long)
+        return cat_offsets, total_num_cat
 
 
 if __name__ == "__main__":
+    import os
+    from pathlib import Path
+    from timeit import default_timer as timer
     from torch.utils.data import DataLoader
-    from data.datasets import SynthDataset
 
-    SYNTH = "diva"
-    NUM_SAMPLES = 1
+    from data.datasets import SynthDatasetPkl
+
+    SYNTH = "tal"
+    BATCH_SIZE = 512
+
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+    DATASET_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "datasets"
 
     if SYNTH == "tal":
+        DATASET_PATH = DATASET_FOLDER / "talnm_mn04_size=65536_seed=45858_dev_val_v1"
         PARAMETERS_TO_EXCLUDE_STR = (
             "master_volume",
             "voices",
@@ -228,17 +242,13 @@ if __name__ == "__main__":
         )
         p_helper = PresetHelper("diva", PARAMETERS_TO_EXCLUDE_STR)
 
-    dataset = SynthDataset(p_helper, NUM_SAMPLES, seed_offset=5423)
-    loader = DataLoader(dataset, batch_size=1, shuffle=False)
-    raw = RawParameters(p_helper)
-    one_hot_enc = OneHotEncoding(p_helper)
+    dataset = SynthDatasetPkl(DATASET_PATH)
+    loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-    for sample in loader:
-        # raw_emb = raw(sample[0])
-        # print(raw_emb)
-        # print(raw_emb.shape)
-        one_hot_emb = one_hot_enc(sample[0])
-        print(one_hot_emb)
-        print(one_hot_emb.shape)
+    oh = OneHotEncoding(p_helper)
+    oh.to(DEVICE)
 
+    for params, _ in loader:
+        oh(params.to(DEVICE))
+        break
     print("")
