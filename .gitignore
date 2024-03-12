@@ -5,9 +5,9 @@ __pycache__/
 
 # C extensions
 *.so
-!data/synths/TAL-NoiseMaker.vst3/Contents/x86_64-linux/TAL-NoiseMaker.so
-!data/synths/Diva.vst3/Contents/x86_64-linux/Diva.so
-!data/synths/Dexed.vst3/Contents/x86_64-linux/Dexed.so
+# !data/synths/TAL-NoiseMaker.vst3/Contents/x86_64-linux/TAL-NoiseMaker.so
+# !data/synths/Diva.vst3/Contents/x86_64-linux/Diva.so
+# !data/synths/Dexed.vst3/Contents/x86_64-linux/Dexed.so
 
 # Test, env, vscode, etc.
 .env
