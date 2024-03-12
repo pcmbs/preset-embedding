@@ -45,7 +45,7 @@ def dexed_engine():
         render_duration_in_sec=4,
         synth_path=DEXED_PATH,
     )
-    renderer.set_midi_params(60, 100, 4.0)
+    renderer.set_midi_parameters(60, 100, 4.0)
     return renderer
 
 
