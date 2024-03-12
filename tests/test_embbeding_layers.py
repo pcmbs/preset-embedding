@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from data.datasets import SynthDataset
-from models.preset.embedding_layers import RawParameters, OneHotEncoding2
+from models.preset.embedding_layers import RawParameters, OneHotEncoding
 from utils.synth import PresetHelper
 
 NUM_SAMPLES = 32
