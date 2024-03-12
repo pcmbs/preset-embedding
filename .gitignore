@@ -5,9 +5,6 @@ __pycache__/
 
 # C extensions
 *.so
-# !data/synths/TAL-NoiseMaker.vst3/Contents/x86_64-linux/TAL-NoiseMaker.so
-# !data/synths/Diva.vst3/Contents/x86_64-linux/Diva.so
-# !data/synths/Dexed.vst3/Contents/x86_64-linux/Dexed.so
 
 # Test, env, vscode, etc.
 .env
@@ -15,6 +12,9 @@ __pycache__/
 .pytest_cache/
 .vscode/
 .devcontainer/
+.venv/
+.python-version
+requirements.txt
 others/
 
 
@@ -27,5 +27,6 @@ wandb/
 
 # data
 data/stats/
+data/synths
 data/datasets/**/**
 !data/datasets/.gitkeep
