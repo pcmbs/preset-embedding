@@ -127,6 +127,7 @@ def generate_eval_dataset(
     configs_dict = {
         "synth": preset_helper.synth_name,
         "params_to_exclude": preset_helper.excl_parameters_str,
+        "num_used_params": preset_helper.num_used_parameters,
         "dataset_size": len(presets),
         "render_duration_in_sec": processor.renderer.render_duration_in_sec,
         "midi_note": processor.renderer.midi_note,
@@ -147,8 +148,6 @@ def generate_eval_dataset(
         torch.save(audio_embeddings, f)
     with open(export_path / "configs.pkl", "wb") as f:
         torch.save(configs_dict, f)
-    with open(export_path / "synth_parameters_description.pkl", "wb") as f:
-        torch.save(preset_helper.used_parameters_description, f)
 
 
 if __name__ == "__main__":

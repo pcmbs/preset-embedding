@@ -25,7 +25,6 @@ class SynthParameter:
         cat_weights: Optional[Tuple[float]] = None,
         interval: Tuple[float] = (0.0, 1.0),
         excluded_cat_idx: Optional[Tuple[int]] = None,
-        group: Optional[str] = None,
     ) -> None:
         """
         Class holding the information of a synth parameter.
@@ -43,7 +42,6 @@ class SynthParameter:
         This can be used to restrict the range of the synth parameter (defaults: (0.0, 1.0))
         - `excluded_cat_idx` (Tuple[int], optional): The excluded categorical indices of the synth parameter
         (only for categorical and binary synth parameters). Defaults to None.
-        - `group` (str, optional): The group to which belongs the parameter (e.g., osc, vcf, vca, etc.). (Defaults: None).
         """
         assert index >= 0
 
@@ -78,7 +76,6 @@ class SynthParameter:
         self.cat_weights = cat_weights
         self.interval = interval
         self.excluded_cat_idx = excluded_cat_idx
-        self.group = group
 
         self._frozen = True  # read-only instance
 
@@ -88,14 +85,18 @@ class SynthParameter:
         return super().__setattr__(attr, value)
 
     def __repr__(self):
-        return (
-            f"SynthParameter(index={self.index}, "
-            f"name={self.name}, "
+        str_format = (
+            f"SynthParameter(index={str(self.index) + ', ':<5}"
+            f"name={self.name + ', ':<20}"
             f"type={self.type}, "
-            f"default_value={self.default_value}, "
-            f"cardinality={self.cardinality}, "
-            f"cat_values={list(self.cat_values) if self.cat_values else 'None'}, "
-            f"interval={self.interval}, "
-            f"excluded_cat_idx={self.excluded_cat_idx}, "
-            f"group={self.group})"
+            f"default_value={self.default_value:.2f}, "
+            f"cardinality={str(self.cardinality) + ', ':<4}"
+            f"interval={self.interval}"
         )
+
+        if self.excluded_cat_idx:
+            str_format += f", excluded_cat_idx={self.excluded_cat_idx})"
+        else:
+            str_format += ")"
+
+        return str_format

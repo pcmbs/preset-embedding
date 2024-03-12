@@ -4,7 +4,7 @@ synth parameters (features) from .pkl files.
 """
 
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Union
 import torch
 from torch.utils.data import Dataset
 
@@ -37,9 +37,6 @@ class SynthDatasetPkl(Dataset):
         with open(self.path_to_dataset / "configs.pkl", "rb") as f:
             self.configs_dict = torch.load(f)
 
-        with open(self.path_to_dataset / "synth_parameters_description.pkl", "rb") as f:
-            self._synth_parameters_descr = torch.load(f)
-
         # whether or not to mmap the dataset (pickled torch tensors)
         self.is_mmap = mmap
 
@@ -53,7 +50,6 @@ class SynthDatasetPkl(Dataset):
 
     @property
     def embedding_dim(self) -> int:
-        # return self.audio_embeddings.shape[1]
         return self.configs_dict["num_outputs"]
 
     @property
@@ -66,14 +62,7 @@ class SynthDatasetPkl(Dataset):
 
     @property
     def num_used_synth_parameters(self) -> int:
-        # return self.synth_parameters.shape[1]
-        return len(self._synth_parameters_descr)
-
-    @property
-    def synth_parameters_description(self) -> List[Tuple[int, str, int]]:
-        """Return the description of the used synthesizer parameters as a
-        list of tuple (feature_idx, synth_param_name, synth_param_idx)."""
-        return self._synth_parameters_descr
+        return self.configs_dict["num_used_params"]
 
     @property
     def embedding_size_in_mb(self) -> float:

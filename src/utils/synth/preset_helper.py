@@ -79,6 +79,16 @@ class PresetHelper:
         return self._excl_parameters_str
 
     @property
+    def used_parameters(self) -> List:
+        """
+        Return a list of SynthParameter objects of the used synthesizer parameters.
+
+        Used synthesizer parameters refer to parameters that are allowed
+        to vary across training samples and are thus inputs to the preset encoder.
+        """
+        return self._used_parameters
+
+    @property
     def num_used_parameters(self) -> int:
         """
         Return the number of used synthesizer parameters.

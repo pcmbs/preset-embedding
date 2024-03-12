@@ -1,0 +1,10 @@
+cfg:
+  _target_: models.preset.highway_oh
+  hidden_features: 1024
+  num_blocks: 6
+  block_kwargs: 
+    norm: LayerNorm
+    act_fn: GELU
+    dropout_p: 0.0
+
+name: highway_oh

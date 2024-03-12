@@ -89,7 +89,7 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
     )
 
     # instantiate preset encoder
-    if cfg.m_preset.name.startswith("mlp"):
+    if cfg.m_preset.name.startswith("mlp") or cfg.m_preset.name.startswith("resnet"):
         preset_encoder: nn.Module = hydra.utils.instantiate(
             cfg.m_preset.cfg,
             out_features=train_dataset.embedding_dim,

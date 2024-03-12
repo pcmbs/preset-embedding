@@ -6,7 +6,9 @@ from dotenv import load_dotenv
 from utils.synth import PresetRenderer
 
 load_dotenv()  # take environment variables from .env
-PLUGINS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "synths"
+TALNM_PATH = os.environ["TALNM_PATH"]
+DIVA_PATH = os.environ["DIVA_PATH"]
+DEXED_PATH = os.environ["DEXED_PATH"]
 
 
 @pytest.fixture
@@ -15,7 +17,7 @@ def talnm_engine():
         sample_rate=44_100,
         convert_to_mono=False,
         render_duration_in_sec=4,
-        synth_path=str(PLUGINS_FOLDER / "TAL-NoiseMaker.vst3"),
+        synth_path=TALNM_PATH,
     )
     renderer.set_midi_parameters(60, 100, 4.0)
     return renderer
@@ -27,7 +29,7 @@ def diva_engine():
         sample_rate=44_100,
         convert_to_mono=False,
         render_duration_in_sec=4,
-        synth_path=str(PLUGINS_FOLDER / "Diva.vst3"),
+        synth_path=DIVA_PATH,
     )
     renderer.set_midi_parameters(60, 100, 4.0)
     return renderer
@@ -39,7 +41,7 @@ def diva_engine():
 #         sample_rate=44_100,
 #         convert_to_mono=False,
 #         render_duration_in_sec=4,
-#         synth_path=str(PLUGINS_FOLDER / "Dexed.vst3"),
+#         synth_path=DEXED_PATH,
 #     )
 #     renderer.set_midi_params(60, 100, 4.0)
 #     return renderer

@@ -1,6 +1,6 @@
 # pylint: disable=W1203
 """
-Module to be run from the command line used to generate audio embeddings
+Module to be run from the command line (on Linux) used to generate audio embeddings
 from a given audio model together with the corresponding synth parameters. 
 
 See `export_dataset_pkl_cfg.yaml` for more details.
@@ -109,6 +109,7 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
         configs_dict = {
             "synth": cfg.synth.name,
             "params_to_exclude": cfg.synth.parameters_to_exclude_str,
+            "num_used_params": dataset.num_used_parameters,
             "dataset_size": cfg.dataset_size,
             "seed_offset": cfg.seed_offset,
             "render_duration_in_sec": cfg.render_duration_in_sec,
@@ -128,11 +129,8 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
             torch.save(configs_dict, f)
 
         log.info("\nSynth parameters description")
-        for param in dataset.used_parameters_description:
+        for param in p_helper.used_parameters:
             log.info(param)
-
-        with open(Path.cwd() / "synth_parameters_description.pkl", "wb") as f:
-            torch.save(dataset.used_parameters_description, f)
 
         audio_embeddings = torch.empty((end_index - start_index, audio_fe.out_features), device="cpu")
         synth_parameters = torch.empty((end_index - start_index, dataset.num_used_parameters), device="cpu")

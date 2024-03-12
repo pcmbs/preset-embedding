@@ -80,10 +80,14 @@ class PresetEmbeddingLitModule(LightningModule):
         self.mrr_targets = None
 
     def validation_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> STEP_OUTPUT:
-        preset, audio_embedding = batch
+        preset_embedding, audio_embedding = self._model_step(batch)
+        # Val Loss
+        loss = self.loss(preset_embedding, audio_embedding)
+        self.log("val/loss", loss, on_step=False, on_epoch=True)
+        # Get target and preds for MRR
         if batch_idx == 0:
             self.mrr_targets = audio_embedding
-        self.mrr_preds.append(self.preset_encoder(preset))
+        self.mrr_preds.append(preset_embedding)
 
     def on_validation_epoch_end(self) -> None:
         num_eval, preds_dim = self.mrr_targets.shape

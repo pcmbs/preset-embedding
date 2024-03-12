@@ -8,7 +8,9 @@ from utils.synth import PresetHelper, PresetRenderer
 
 load_dotenv()  # take environment variables from .env
 
-PLUGINS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "synths"
+TALNM_PATH = os.environ["TALNM_PATH"]
+DIVA_PATH = os.environ["DIVA_PATH"]
+DEXED_PATH = os.environ["DEXED_PATH"]
 
 
 class SynthDataset(Dataset):
@@ -84,15 +86,15 @@ class SynthDataset(Dataset):
 
         if path_to_plugin is None:
             if preset_helper.synth_name == "talnm":
-                path_to_plugin = PLUGINS_FOLDER / "TAL-NoiseMaker.vst3"
+                path_to_plugin = TALNM_PATH
             elif preset_helper.synth_name == "dexed":
-                path_to_plugin = PLUGINS_FOLDER / "Dexed.vst3"
+                path_to_plugin = DEXED_PATH
             elif preset_helper.synth_name == "diva":
-                path_to_plugin = PLUGINS_FOLDER / "Diva.vst3"
+                path_to_plugin = DIVA_PATH
             else:
                 raise NotImplementedError()
-        if isinstance(path_to_plugin, Path):
-            path_to_plugin = str(path_to_plugin)
+
+        path_to_plugin = str(path_to_plugin)
 
         self.renderer = PresetRenderer(
             synth_path=path_to_plugin,

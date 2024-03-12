@@ -46,10 +46,7 @@ def cat_dataset_pkl(cfg: DictConfig) -> None:
 
     dataset_size = configs["dataset_size"]
     out_features = configs["num_outputs"]
-
-    # get the number of synth parameters used (in features)
-    with open(Path.cwd() / "synth_parameters_description.pkl", "rb") as f:
-        in_features = len(torch.load(f))
+    in_features = configs["num_used_params"]
 
     # get the all filenames of the subsets (incl start and end indices)
     pkl_filename = {
