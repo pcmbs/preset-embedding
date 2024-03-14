@@ -16,6 +16,4 @@ dependencies:
     - optuna==3.5.0
     - timm==0.9.10 # 0.4.12 might be required for passt 
     - torchopenl3==1.0.1
-    - wandb==0.16.3
-    - pedalboard==0.8.9
-    - mido==1.3.2
+    - wandb==0.16.4

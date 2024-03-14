@@ -188,7 +188,7 @@ class ProcessEvalPresets:
         )
         # render all presets and compute their RMS. Presets with RMS outside the accepted range are removed
         for i, params in enumerate(presets):
-            self.renderer.set_parameters(self.preset_helper.used_parameters_idx, params)
+            self.renderer.set_parameters(self.preset_helper.used_parameters_absolute_idx, params)
             self.renderer.set_midi_parameters(self.midi_note, self.midi_velocity, self.midi_duration_in_sec)
             audio_out = torch.from_numpy(self.renderer.render_note())
             rms_out = torch.sqrt(torch.mean(torch.square(audio_out))).item()
@@ -240,7 +240,7 @@ class RenderPreset(Dataset):
     def __getitem__(self, idx: int):
         synth_parameters = self.presets[idx]
         # set synth parameters
-        self.renderer.set_parameters(self.preset_helper.used_parameters_idx, synth_parameters)
+        self.renderer.set_parameters(self.preset_helper.used_parameters_absolute_idx, synth_parameters)
         # set midi parameters
         self.renderer.set_midi_parameters(
             self.renderer.midi_note, self.renderer.midi_velocity, self.renderer.midi_duration_in_sec

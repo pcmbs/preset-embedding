@@ -50,11 +50,10 @@ SYNTH_PARAMETERS = (
     SynthParameter(index=37, name="osc_2_phase", type_="num"),
     SynthParameter(index=38, name="osc_1_pw", type_="num", default_value=0.5),
     SynthParameter(index=39, name="osc_1_phase", type_="num", default_value=0.5),
-    SynthParameter(  # TODO: change type from "cat" to "num"
+    SynthParameter(
         index=40,
         name="transpose",
         type_="num",
-        # type_="cat",
         default_value=0.5,
         cardinality=4,
         cat_values=(0.0, 0.5, 0.75, 1.0),

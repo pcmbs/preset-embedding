@@ -5,7 +5,7 @@ num_blocks:
   kwargs:
     name: num_blocks
     low: 1
-    high: 3
+    high: 2
 
 # number of hidden features for the preset encoder (linear scale)
 hidden_features: 
@@ -13,7 +13,7 @@ hidden_features:
   kwargs:
     name: hidden_features
     low: 256
-    high: 4096
+    high: 3072
     step: 256
 
 
@@ -52,7 +52,7 @@ beta1:
   kwargs:
     name: beta1
     low: 0.75
-    high: 0.999
+    high: 0.95
     step: 0.001
 
 # Exp decay rate for 1st moment estimate

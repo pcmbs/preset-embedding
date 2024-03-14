@@ -87,9 +87,9 @@ class SynthParameter:
     def __repr__(self):
         str_format = (
             f"SynthParameter(index={str(self.index) + ', ':<5}"
-            f"name={self.name + ', ':<20}"
+            f"name={self.name + ', ':<25}"
             f"type={self.type}, "
-            f"default_value={self.default_value:.2f}, "
+            # f"default_value={self.default_value:.2f}, "
             f"cardinality={str(self.cardinality) + ', ':<4}"
             f"interval={self.interval}"
         )

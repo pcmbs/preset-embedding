@@ -2,9 +2,9 @@
 
 defaults:
   - _self_
-  - synth: talnm
-  - search_space: mlp_all
-  - m_preset: mlp_relu_raw
+  - synth: ???
+  - search_space: ???
+  - m_preset: ???
   - sampler: qmc_tpe
   - pruner: nop
 
@@ -47,7 +47,7 @@ trainer:
 
 # Optimizer to use
 optimizer:
-  _target_: torch.optim.Adam
+  _target_: torch.optim.AdamW
   _partial_: true
   weight_decay: 0.0
 

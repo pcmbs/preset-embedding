@@ -24,7 +24,7 @@ SYNTH_PARAMETERS = [
     SynthParameter(index=4, name="vcc:voices", type_="num", cardinality=8),
     SynthParameter(index=5, name="vcc:voice_stack", type_="num", cardinality=6),
     SynthParameter(index=6, name="vcc:mode", type_="cat", default_value=0.25, cardinality=5),
-    SynthParameter(index=7, name="vcc:glidemode", type_="bin"),
+    SynthParameter(index=7, name="vcc:glidemode", type_="cat", cardinality=2),
     SynthParameter(index=8, name="vcc:glide", type_="num"),
     SynthParameter(index=9, name="vcc:glide2", type_="num", default_value=0.5),
     SynthParameter(index=10, name="vcc:gliderange", type_="num", default_value=1.0),
@@ -34,14 +34,14 @@ SYNTH_PARAMETERS = [
     SynthParameter(index=14, name="vcc:transpose", type_="num", default_value=0.25, cardinality=49),
     SynthParameter(index=15, name="vcc:finetunecents", type_="num", default_value=0.5),
     SynthParameter(index=16, name="vcc:note_priority", type_="cat", cardinality=3),
-    SynthParameter(index=17, name="vcc:multicore", type_="bin"),
+    SynthParameter(index=17, name="vcc:multicore", type_="cat", cardinality=2),
     ######################################################################################################
     ###### Global parameters
     # - exclude: all
     # - mod init values: accuracy to 0.0, offlineacc to 0.0 (high quality not needed)
     # - tuneslop corresponds to detuneAmt
     SynthParameter(index=18, name="opt:accuracy", type_="cat", cardinality=4),
-    SynthParameter(index=19, name="opt:offlineacc", type_="bin"),
+    SynthParameter(index=19, name="opt:offlineacc", type_="cat", cardinality=2),
     SynthParameter(index=20, name="opt:tuneslop", type_="num", default_value=0.25),
     SynthParameter(index=21, name="opt:cutoffslop", type_="num", default_value=0.16),
     SynthParameter(index=22, name="opt:glideslop", type_="num", default_value=0.24),
@@ -121,7 +121,7 @@ SYNTH_PARAMETERS = [
         excluded_cat_idx=_EXCLUDED_CAT_FOR_MOD,
     ),
     SynthParameter(index=64, name="lfo1:freqmod_dpt", type_="num", default_value=0.5),
-    SynthParameter(index=65, name="lfo1:polarity", type_="bin"),
+    SynthParameter(index=65, name="lfo1:polarity", type_="cat", cardinality=2),
     ### LFO2
     SynthParameter(index=66, name="lfo2:sync", type_="cat", default_value=0.2689, cardinality=27),
     SynthParameter(index=67, name="lfo2:restart", type_="cat", default_value=0.33, cardinality=4),
@@ -145,7 +145,7 @@ SYNTH_PARAMETERS = [
         excluded_cat_idx=_EXCLUDED_CAT_FOR_MOD,
     ),
     SynthParameter(index=75, name="lfo2:freqmod_dpt", type_="num", default_value=0.5),
-    SynthParameter(index=76, name="lfo2:polarity", type_="bin"),
+    SynthParameter(index=76, name="lfo2:polarity", type_="cat", cardinality=2),
     ######################################################################################################
     ###### MOD parameters
     # - exclude: rectify (none), invert (none), add (source1 & 2 to None)
@@ -305,7 +305,7 @@ SYNTH_PARAMETERS = [
     # Noise volume available for Triple VCO, DCO,
     SynthParameter(index=124, name="osc:noisevol", type_="num"),
     # Noise color available for Triple VCO only
-    SynthParameter(index=125, name="osc:noisecolor", type_="bin"),
+    SynthParameter(index=125, name="osc:noisecolor", type_="cat", cardinality=2),
     # Tune/Shape Mode available for Triple VCO and Digital (only *osc{1,2} for the later)
     SynthParameter(index=126, name="osc:tunemodosc1", type_="bin"),
     SynthParameter(index=127, name="osc:tunemodosc2", type_="bin"),
@@ -358,7 +358,7 @@ SYNTH_PARAMETERS = [
     # Resonance available for HPF Bite only
     SynthParameter(index=149, name="hpf:resonance", type_="num"),
     # Revision available for HPF Bite only (exclude and fix to 0.0)
-    SynthParameter(index=150, name="hpf:revision", type_="bin"),
+    SynthParameter(index=150, name="hpf:revision", type_="cat", cardinality=2),
     # TODO: didn't find parameter, which anyway is excluded and fixed to 0.0 since depends on midi note
     SynthParameter(index=151, name="hpf:keyfollow", type_="num"),
     # Freq Mod Src and Depth available for HPF Bite only
@@ -401,11 +401,11 @@ SYNTH_PARAMETERS = [
     SynthParameter(index=162, name="vcf1:keyfollow", type_="num"),  # exclude and set to 0.0
     SynthParameter(index=163, name="vcf1:filterfm", type_="num", default_value=0.5),
     # Ladder Mode available for Ladder and Cascade
-    SynthParameter(index=164, name="vcf1:laddermode", type_="bin"),
+    SynthParameter(index=164, name="vcf1:laddermode", type_="cat", cardinality=2),
     # Ladder Color only available for Cascade
-    SynthParameter(index=165, name="vcf1:laddercolor", type_="bin", default_value=1.0),
+    SynthParameter(index=165, name="vcf1:laddercolor", type_="cat", cardinality=2, default_value=1.0),
     # Slnky Revision only available for Bite (exclude and set to Rev 1)
-    SynthParameter(index=166, name="vcf1:slnkyrevision", type_="bin"),
+    SynthParameter(index=166, name="vcf1:slnkyrevision", type_="cat", cardinality=2),
     # SVF Mode only available for Multimode
     SynthParameter(index=167, name="vcf1:svfmode", type_="cat", cardinality=4),
     # In HPF pannel
@@ -446,13 +446,13 @@ SYNTH_PARAMETERS = [
         excluded_cat_idx=_EXCLUDED_CAT_FOR_MOD,
     ),
     SynthParameter(index=177, name="vcf1:shapemoddepth", type_="num", default_value=0.5),
-    SynthParameter(index=178, name="vcf1:uhbiebandpass", type_="bin"),
+    SynthParameter(index=178, name="vcf1:uhbiebandpass", type_="cat", cardinality=2),
     ######################################################################################################
     ###### VCA parameters
     # - excluded: pan, volume, vca, pan modulation
     SynthParameter(index=179, name="vca1:pan", type_="num", default_value=0.5),
     SynthParameter(index=180, name="vca1:volume", type_="num", default_value=0.5),
-    SynthParameter(index=181, name="vca1:vca", type_="bin", default_value=1.0),
+    SynthParameter(index=181, name="vca1:vca", type_="cat", cardinality=2, default_value=1.0),
     SynthParameter(
         index=182,
         name="vca1:modulation",
@@ -494,7 +494,7 @@ SYNTH_PARAMETERS = [
     SynthParameter(index=194, name="chrs1:wet", type_="num", default_value=1.0),
     ### Phase 1 parameters
     # - exclude: stereo, sync, phase
-    SynthParameter(index=195, name="phase1:type", type_="bin"),
+    SynthParameter(index=195, name="phase1:type", type_="cat", cardinality=2),
     SynthParameter(index=196, name="phase1:rate", type_="num", default_value=0.5),
     SynthParameter(index=197, name="phase1:feedback", type_="num"),
     SynthParameter(index=198, name="phase1:stereo", type_="num", default_value=0.5),
@@ -566,7 +566,7 @@ SYNTH_PARAMETERS = [
     SynthParameter(index=235, name="chrs2:wet", type_="num", default_value=1.0),
     ### Phase 2 parameters (excluded module)
     # - exclude: stereo, sync, phase
-    SynthParameter(index=236, name="phase2:type", type_="bin"),
+    SynthParameter(index=236, name="phase2:type", type_="cat", cardinality=2),
     SynthParameter(index=237, name="phase2:rate", type_="num", default_value=0.5),
     SynthParameter(index=238, name="phase2:feedback", type_="num"),
     SynthParameter(index=239, name="phase2:stereo", type_="num", default_value=0.5),

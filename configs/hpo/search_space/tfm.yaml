@@ -4,8 +4,8 @@ num_blocks:
   type: int
   kwargs:
     name: num_blocks
-    low: 2
-    high: 16
+    low: 1
+    high: 6
 
 # number of hidden features for the preset encoder (linear scale)
 hidden_features: 
@@ -13,8 +13,25 @@ hidden_features:
   kwargs:
     name: hidden_features
     low: 128
-    high: 1024
+    high: 768
     step: 128
+
+# number of attention heads for the preset encoder (linear scale)
+num_heads: 
+  type: int
+  kwargs:
+    name: num_heads
+    low: 2
+    high: 8
+    step: 2
+
+# factor for the pointwise FFNN inner dimension (linear scale)
+mlp_factor: 
+  type: int
+  kwargs:
+    name: mlp_factor
+    low: 1
+    high: 4
 
 
 ##### scheduler HPs
@@ -32,7 +49,7 @@ base_lr:
   kwargs:
     name: base_lr
     low: 0.0001
-    high: 0.02
+    high: 0.015
     log: true
 
 # scheduler final lr
@@ -40,8 +57,8 @@ min_lr:
   type: float
   kwargs:
     name: min_lr
-    low: 0.0000000001
-    high: 0.02
+    low: 1e-10
+    high: 0.015
     log: true
 
 

@@ -7,7 +7,7 @@ from typing import Dict, Optional
 import torch
 from torch import nn
 
-from models.preset.embedding_layers import RawParameters, OneHotEncoding
+from models.preset.embedding_layers import RawParameters, OneHotEncoding, FTTokenizer, PositionalEncoding
 from utils.synth import PresetHelper
 
 #################### BUILDING BLOCKS ####################
@@ -71,7 +71,10 @@ class MLPBlock(nn.Module):
 
 class ResNetBlock(nn.Module):
     """
-    TODO
+    MLP based ResNet adapted from
+    https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
+
+    ResNetBlock(x) = ReLU(x + residual_dropout(norm(linear(dropout(act_fn(norm(linear(x)))))))
     """
 
     def __init__(
@@ -82,9 +85,13 @@ class ResNetBlock(nn.Module):
         act_fn: str = "ReLU",
         dropout_p=0.0,
         residual_dropout_p=0.0,
+        has_residual: bool = True,
     ) -> None:
         """
-        TODO
+        MLP based ResNet adapted from
+        https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py
+
+        ResNetBlock(x) = ReLU(x + residual_dropout(norm(linear(dropout(act_fn(norm(linear(x)))))))
 
         Args
         - `in_features` (int): number of input features
@@ -95,23 +102,27 @@ class ResNetBlock(nn.Module):
         - `act_fn` (nn.Module): activation function
         - `dropout_p` (float): dropout probability
         - `residual_dropout_p` (float): dropout probability for the residual connection.
+        - `has_residual` (bool): whether to include the residual connection or not.
+        Note that the residual connection is removed if `in_features` is not equal to `out_features`.
         """
         super().__init__()
-        self.has_residual = in_features == out_features
+        self.has_residual = has_residual and in_features == out_features
 
-        self.act_fn = getattr(nn, act_fn)
         if norm not in ["LayerNorm", "BatchNorm1d"]:
             raise ValueError(f"norm must be 'LayerNorm' or 'BatchNorm1d', got {norm}")
         self.norm = getattr(nn, norm)
+        self.act_fn = getattr(nn, act_fn)
 
-        self.layer = nn.Sequential(
+        self.block = nn.Sequential(
             nn.Linear(in_features=in_features, out_features=out_features, bias=False),
             self.norm(out_features),
             self.act_fn(),
             nn.Dropout(p=dropout_p),
+            nn.Linear(in_features=out_features, out_features=out_features, bias=False),
+            self.norm(out_features),
         )
-
-        self.residual_dropout = nn.Dropout(p=residual_dropout_p) if self.has_residual else nn.Identity()
+        self.residual_dropout = nn.Dropout(p=residual_dropout_p)
+        self.last_activation = self.act_fn()
 
     def init_weights(self) -> None:
         for m in self.modules():
@@ -122,12 +133,22 @@ class ResNetBlock(nn.Module):
                 nn.init.zeros_(m.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        identity = x
+        x = self.block(x)
         if self.has_residual:
-            return self.layer(x) + self.residual_dropout(x)
-        return self.layer(x)
+            x = identity + self.residual_dropout(x)
+        x = self.last_activation(x)
+        return x
 
 
 class HighwayBlock(nn.Module):
+    """
+    Highway MLP Block as proposed by
+    Srivastava, R.K., Greff, K. and Schmidhuber, J. (2015) 'Highway Networks'.
+    Available at: http://arxiv.org/abs/1505.00387
+
+    HighwayBlock(x) = fc(x) * gate(x) + x * (1 - gate(x))
+    """
 
     def __init__(
         self,
@@ -136,24 +157,31 @@ class HighwayBlock(nn.Module):
         norm: str = "BatchNorm1d",
         act_fn: str = "ReLU",
         dropout_p: float = 0.0,
+        residual_dropout_p: float = 0.0,
+        has_residual: bool = True,
     ) -> None:
         """
-        Highway MLP Block.
+        Highway MLP Block as proposed by
+        Srivastava, R.K., Greff, K. and Schmidhuber, J. (2015) 'Highway Networks'.
+        Available at: http://arxiv.org/abs/1505.00387
+
+        HighwayBlock(x) = fc(x) * gate(x) + x * (1 - gate(x))
 
         Args
         - `in_features` (int): number of input features
         - `out_features` (int): number of output features.
-        If different from `in_features` the residual connection and gates are removed,
-        uch that the output is GELU(LayerNorm(FC(x))).
+        If different from `in_features` the residual connection is removed,
+        such that the output is act_fn(norm(nn.Linear(x))).
         - `norm` (nn.Module): normalization layer. Must be nn.LayerNorm or nn.BatchNorm1d
         - `act_fn` (nn.Module): activation function
         - `dropout_p` (float): dropout probability
+        - `has_residual` (bool): whether to include the residual connection or not.
+        Note that the residual connection is removed if `in_features` is not equal to `out_features`.
         """
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.has_residual = self.in_features == self.out_features
-        self.dropout_p = dropout_p
+        self.has_residual = has_residual and self.in_features == self.out_features
 
         self.act_fn = getattr(nn, act_fn)
         if norm not in ["LayerNorm", "BatchNorm1d"]:
@@ -164,13 +192,14 @@ class HighwayBlock(nn.Module):
             nn.Linear(in_features=self.in_features, out_features=self.out_features, bias=False),
             self.norm(self.out_features),
             self.act_fn(),
+            nn.Dropout(p=dropout_p),
         )
 
         if self.has_residual:
             self.gate = nn.Sequential(
                 nn.Linear(in_features=self.in_features, out_features=self.in_features, bias=True),
                 nn.Sigmoid(),
-                nn.Dropout(p=self.dropout_p),
+                nn.Dropout(p=residual_dropout_p),
             )
 
         self.init_weights()
@@ -209,7 +238,6 @@ class MlpBuilder(nn.Module):
         block_layer: nn.Module,
         hidden_features: int = 1024,
         num_blocks: int = 2,
-        pre_norm: bool = False,
         block_kwargs: Optional[Dict] = None,
         embedding_kwargs: Optional[Dict] = None,
     ) -> None:
@@ -217,8 +245,6 @@ class MlpBuilder(nn.Module):
 
         self.embedding_layer = embedding_layer(**embedding_kwargs)
         self.in_features = self.embedding_layer.embedding_dim * self.embedding_layer.out_length
-
-        self.norm_pre = nn.LayerNorm(self.in_features) if pre_norm else nn.Identity()
 
         self.blocks = nn.Sequential(
             *[
@@ -231,7 +257,7 @@ class MlpBuilder(nn.Module):
             ]
         )
 
-        self.out_layer = nn.Linear(hidden_features, out_features)
+        self.head = nn.Linear(hidden_features, out_features)
 
         self.init_weights()
 
@@ -242,23 +268,18 @@ class MlpBuilder(nn.Module):
     def init_weights(self) -> None:
         self.embedding_layer.init_weights()
 
-        if isinstance(self.norm_pre, nn.LayerNorm):
-            nn.init.ones_(self.norm_pre.weight)
-            nn.init.zeros_(self.norm_pre.bias)
-
         for b in self.blocks:
             b.init_weights()
 
-        nn.init.kaiming_normal_(self.out_layer.weight, mode="fan_in", nonlinearity="linear")
-        nn.init.zeros_(self.out_layer.bias)
+        nn.init.kaiming_normal_(self.head.weight, mode="fan_in", nonlinearity="linear")
+        nn.init.zeros_(self.head.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.embedding_layer(x)
         if len(x.shape) > 2:
             x = x.reshape(x.shape[0], -1)
-        x = self.norm_pre(x)
         x = self.blocks(x)
-        x = self.out_layer(x)
+        x = self.head(x)
         return x
 
 
@@ -342,12 +363,14 @@ if __name__ == "__main__":
 
     p_helper = PresetHelper("talnm", PARAMETERS_TO_EXCLUDE_STR)
 
-    resnet = resnet_oh(192, p_helper, num_blocks=16, hidden_features=1536)
-    print(resnet.num_parameters)
-    print(resnet)
-    # for i in range(1, 5):
-    #     for j in range(i, 25):
-    #         highway = mlp_hw_oh(192, p_helper, num_blocks=j, hidden_features=256 * i)
-    #         resnet = resnet_oh(192, p_helper, num_blocks=j, hidden_features=256 * i)
-    #         print(f"{i*256:>4} x {j:>2} | HW: {highway.num_parameters:>8}, RN: {resnet.num_parameters:>8}")
+    # model = resnet_oh(192, p_helper, num_blocks=6, hidden_features=512)
+    # model = highway_oh(192, p_helper, num_blocks=12, hidden_features=512)
+    # print(model.num_parameters)
+    # print(model)
+    model = mlp_oh  # resnet_oh
+    print("[num_blocks, hidden_features] -> number of parameters")
+    for i in range(1, 4):
+        for j in range(128, 4096 + 128, 128):
+            net = model(192, p_helper, num_blocks=i, hidden_features=j)
+            print(f"[{i:>2}, {j:>4}] -> {net.num_parameters:.3e}")
     print("")

@@ -8,10 +8,6 @@ from utils.synth import PresetHelper, PresetRenderer
 
 load_dotenv()  # take environment variables from .env
 
-TALNM_PATH = os.environ["TALNM_PATH"]
-DIVA_PATH = os.environ["DIVA_PATH"]
-DEXED_PATH = os.environ["DEXED_PATH"]
-
 
 class SynthDataset(Dataset):
     """
@@ -86,11 +82,11 @@ class SynthDataset(Dataset):
 
         if path_to_plugin is None:
             if preset_helper.synth_name == "talnm":
-                path_to_plugin = TALNM_PATH
+                path_to_plugin = os.environ["TALNM_PATH"]
             elif preset_helper.synth_name == "dexed":
-                path_to_plugin = DEXED_PATH
+                path_to_plugin = os.environ["DEXED_PATH"]
             elif preset_helper.synth_name == "diva":
-                path_to_plugin = DIVA_PATH
+                path_to_plugin = os.environ["DIVA_PATH"]
             else:
                 raise NotImplementedError()
 
@@ -157,7 +153,7 @@ class SynthDataset(Dataset):
                 self.rnd_sampling_info, rng_cpu
             )
             # set synth parameters
-            self.renderer.set_parameters(self.preset_helper.used_parameters_idx, synth_parameters)
+            self.renderer.set_parameters(self.preset_helper.used_parameters_absolute_idx, synth_parameters)
             # set midi parameters
             self.renderer.set_midi_parameters(self.midi_note, self.midi_velocity, self.midi_duration_in_sec)
             # render audio
@@ -192,29 +188,6 @@ class SynthDataset(Dataset):
                     cat_parameters_idx += indices
 
         return rnd_parameters, cat_parameters_int, cat_parameters_idx
-
-    # def _sample_parameter_values(self, rnd_sampling_info: dict, rng: torch.Generator):
-    #     rnd_parameters = torch.empty(self.num_used_parameters, dtype=torch.float32)
-    #     cat_parameters_int = []
-    #     cat_parameters_idx = []
-
-    #     for interval, indices in rnd_sampling_info["num"].items():
-    #         rnd_parameters[indices] = torch.empty(len(indices)).uniform_(*interval, generator=rng)
-
-    #     for (cat_values, cat_weights), indices in rnd_sampling_info["cat"].items():
-    #         sampled_cat_idx = torch.multinomial(
-    #             torch.tensor(cat_weights), len(indices), replacement=True, generator=rng
-    #         )
-    #         # sampled_cat_idx = torch.randint(0, len(cat_values), (len(indices),), generator=rng)
-    #         rnd_parameters[indices] = torch.tensor(cat_values, dtype=torch.float32)[sampled_cat_idx]
-    #         cat_parameters_int += sampled_cat_idx.tolist()
-    #         cat_parameters_idx += indices
-
-    #     rnd_parameters[rnd_sampling_info["bin"]] = torch.bernoulli(
-    #         torch.full((len(rnd_sampling_info["bin"]),), 0.5), generator=rng
-    #     )
-
-    #     return rnd_parameters, cat_parameters_int, cat_parameters_idx
 
 
 if __name__ == "__main__":

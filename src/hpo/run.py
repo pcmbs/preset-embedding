@@ -62,6 +62,9 @@ def register_signal_handler_with_args(signal_num, handler_func, *args):
 
 def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> float:
     """Objective function for optuna HPO."""
+    # Init Flag for Pruning
+    is_pruned = False
+
     # set RNG seed for reproducibility
     L.seed_everything(cfg.seed, workers=True)
 
@@ -89,7 +92,8 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
     )
 
     # instantiate preset encoder
-    if cfg.m_preset.name.startswith("mlp") or cfg.m_preset.name.startswith("resnet"):
+    model_type = cfg.m_preset.name.split("_")[0]
+    if model_type in ["mlp", "resnet", "highway"]:
         preset_encoder: nn.Module = hydra.utils.instantiate(
             cfg.m_preset.cfg,
             out_features=train_dataset.embedding_dim,
@@ -97,13 +101,23 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
             num_blocks=hps["num_blocks"],
             hidden_features=hps["hidden_features"],
         )
-    elif cfg.m_preset.name.startswith("gru"):
+    elif model_type == "gru":
         preset_encoder: nn.Module = hydra.utils.instantiate(
             cfg.m_preset.cfg,
             out_features=train_dataset.embedding_dim,
             preset_helper=preset_helper,
             num_layers=hps["num_layers"],
             hidden_features=hps["hidden_features"],
+        )
+    elif model_type == "tfm":
+        preset_encoder: nn.Module = hydra.utils.instantiate(
+            cfg.m_preset.cfg,
+            out_features=train_dataset.embedding_dim,
+            preset_helper=preset_helper,
+            hidden_features=hps["hidden_features"],
+            num_blocks=hps["num_blocks"],
+            num_heads=hps["num_heads"],
+            mlp_factor=hps["mlp_factor"],
         )
     else:
         raise NotImplementedError(f"preset encoder {cfg.m_preset.name} not implemented!")
@@ -171,6 +185,12 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
         "sampler", cfg.sampler.get("name_startup_sampler") if is_startup else cfg.sampler.name
     )
 
+    # Flag to abort the study if loss diverges
+    if trainer.callback_metrics["train/loss"].item() > 0.75 or torch.isnan(
+        trainer.callback_metrics["train/loss"]
+    ):
+        is_pruned = True
+
     if logger:
         # log hyperparameters, seed, and dataset refs
         # log sampler and pruner config
@@ -186,13 +206,13 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
             for param, value in tmp_dict[cfg_key].items():
                 if param != "_target_":
                     d[f"{param}"] = value
-        trainer.logger.log_hyperparams({"hps": hps, "misc": trial.user_attrs, **sp_dict})
+        trainer.logger.log_hyperparams({"hps": hps, "misc": trial.user_attrs, "pruned": is_pruned, **sp_dict})
         # terminate wandb run
         wandb.finish()
 
     # Abort the study if loss diverges
-    if trainer.callback_metrics["train/loss"].item() > 10:
-        log.info("Trial aborted due to high loss")
+    if is_pruned:
+        log.info("Trial aborted due to high or NaN loss")
         raise optuna.TrialPruned
 
     return metric_value

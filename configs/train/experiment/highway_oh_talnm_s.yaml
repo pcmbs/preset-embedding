@@ -3,7 +3,7 @@
 defaults:
   - override /train_dataset: talnm_mn04_v1
   - override /val_dataset: talnm_mn04_v1
-  - override /m_preset: mlp_hw_oh
+  - override /m_preset: highway_oh
 
 
 ########## hyperparameters 

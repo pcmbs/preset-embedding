@@ -111,8 +111,8 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
             torch.save(configs_dict, f)
 
         log.info("\nSynth parameters description")
-        for param in p_helper.used_parameters:
-            log.info(param)
+        for i, param in enumerate(p_helper.used_parameters):
+            log.info(f"{i:<3}: {param}")
 
         audio_embeddings = torch.empty((end_index - start_index, audio_fe.out_features), device="cpu")
         synth_parameters = torch.empty((end_index - start_index, dataset.num_used_parameters), device="cpu")

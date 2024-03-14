@@ -4,7 +4,7 @@ num_blocks:
   type: int
   kwargs:
     name: num_blocks
-    low: 3
+    low: 1
     high: 16
 
 # number of hidden features for the preset encoder (linear scale)
@@ -12,9 +12,9 @@ hidden_features:
   type: int
   kwargs:
     name: hidden_features
-    low: 256
-    high: 1536
-    step: 256
+    low: 128
+    high: 1024
+    step: 128
 
 
 ##### scheduler HPs
@@ -32,7 +32,7 @@ base_lr:
   kwargs:
     name: base_lr
     low: 0.0001
-    high: 0.02
+    high: 0.015
     log: true
 
 # scheduler final lr
@@ -41,7 +41,7 @@ min_lr:
   kwargs:
     name: min_lr
     low: 1e-10
-    high: 0.002
+    high: 0.015
     log: true
 
 
@@ -52,7 +52,7 @@ beta1:
   kwargs:
     name: beta1
     low: 0.75
-    high: 0.999
+    high: 0.95
     step: 0.001
 
 # Exp decay rate for 1st moment estimate

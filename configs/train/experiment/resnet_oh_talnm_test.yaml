@@ -10,8 +10,8 @@ defaults:
 
 m_preset: # 9_098_688 parameters
   cfg:
-    hidden_features: 768
-    num_blocks: 16
+    hidden_features: 768 # 512
+    num_blocks: 8 # 6
 
 solver:
   lr: 8.94e-3

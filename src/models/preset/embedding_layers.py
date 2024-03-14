@@ -2,42 +2,12 @@
 """
 Module implementing embedding layers for the preset encoder.
 """
-from typing import Tuple
+import math
+from typing import Optional, Tuple
 import torch
 from torch import nn
 
 from utils.synth import PresetHelper
-
-
-class FeatureNormalizer(nn.Module):
-    """Normalize all parameter values in the range [-1,1]."""
-
-    def __init__(self, in_features: int) -> None:
-        """
-        Normalize all parameter values in the range [-1,1]
-        assuming all parameter values are in the range [0,1].
-        """
-        super().__init__()
-        self.in_features = in_features
-        self.register_buffer("scaler", torch.empty(1), persistent=False)
-        self.register_buffer("center", torch.empty(1), persistent=False)
-
-    @property
-    def out_length(self) -> int:
-        return self.in_features
-
-    @property
-    def embedding_dim(self) -> int:
-        return 1
-
-    def init_weights(self) -> None:
-        nn.init.constant_(self.scaler, 2.0)
-        nn.init.constant_(self.center, 1.0)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # assuming all parameter values in the range [0,1]
-        x = x * self.scaler - self.center
-        return x
 
 
 class RawParameters(nn.Module):
@@ -104,17 +74,14 @@ class OneHotEncoding(nn.Module):
         - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
         """
         super().__init__()
-
-        self._grouped_used_parameters = preset_helper.grouped_used_parameters
-
         # used numerical and binary parameters indices
         self.noncat_idx = torch.tensor(preset_helper.used_noncat_parameters_idx, dtype=torch.long)
         self.num_noncat = len(self.noncat_idx)
 
         # used categorical parameters
         self.cat_idx = torch.tensor(preset_helper.used_cat_parameters_idx, dtype=torch.long)
-        self.cat_offsets, self.total_num_cat = self._compute_cat_infos(preset_helper)
-
+        cat_offsets, self.total_num_cat = self._compute_cat_infos(preset_helper)
+        self.register_buffer("cat_offsets", cat_offsets)
         self._out_length = self.total_num_cat + self.num_noncat
 
     @property
@@ -129,12 +96,7 @@ class OneHotEncoding(nn.Module):
         pass
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # move instance attribute to device of input tensor (should only be done during the first forward pass)
-        device = x.device
-        if self.cat_offsets.device != device:
-            self.cat_offsets = self.cat_offsets.to(device)
-
-        oh_enc = torch.zeros(x.shape[0], self.out_length, device=device)
+        oh_enc = torch.zeros(x.shape[0], self.out_length, device=x.device)
 
         # Assign noncat parameters
         oh_enc[:, : self.num_noncat] = x[:, self.noncat_idx]
@@ -142,7 +104,7 @@ class OneHotEncoding(nn.Module):
         # Calculate and assign ones for categorical
         ones_idx = x[:, self.cat_idx].to(dtype=torch.long) + self.cat_offsets + self.num_noncat
         oh_enc.scatter_(1, ones_idx, 1)
-        # equivalent to oh_enc[torch.arange(x.shape[0]).unsqueeze(1), ones_idx] = 1
+        # oh_enc[torch.arange(x.shape[0]).unsqueeze(1), ones_idx] = 1
 
         return oh_enc
 
@@ -160,13 +122,172 @@ class OneHotEncoding(nn.Module):
         """
         cat_offsets = []
         offset = 0
-        for (cat_values, _), indices in preset_helper.grouped_used_parameters["discrete"]["cat"].items():
-            for _ in indices:
-                cat_offsets.append(offset)
-                offset += len(cat_values)
+        for i in preset_helper.used_cat_parameters_idx:
+            cardinality = preset_helper.used_parameters[i].cardinality
+            cat_offsets.append(offset)
+            offset += cardinality
         total_num_cat = offset
         cat_offsets = torch.tensor(cat_offsets, dtype=torch.long)
         return cat_offsets, total_num_cat
+
+
+class FTTokenizer(nn.Module):
+    """
+    Synth Presets Tokenizer class.
+
+    - Each non-categorical (numerical & binary) parameter is embedded using a distinct linear projection.
+    - Each categorical parameter is embedded using a nn.Embedding lookup table.
+    """
+
+    # https://github.com/yandex-research/rtdl-revisiting-models/blob/main/bin/ft_transformer.py
+    # https://github.com/gwendal-lv/spinvae2/blob/main/model/presetmodel.py
+
+    def __init__(
+        self,
+        preset_helper: PresetHelper,
+        embedding_dim: int,
+        has_cls: bool,
+        pe_type: Optional[str] = "absolute",
+        pe_dropout_p: float = 0.0,
+    ) -> None:
+        """
+        Args
+        - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        - `embedding_dim` (int): The embedding dimension.
+        - `cls_token` (bool): Whether to add a class token.
+        - `pe_type` (Optional[str]): The type of positional encoding. (Defaults: "absolute").
+        Pass None to not use positional encoding.
+        - `pe_dropout_p` (float): The dropout probability for the positional encoding. (Defaults: 0.0).
+        """
+        super().__init__()
+        self._embedding_dim = embedding_dim
+        self._out_length = preset_helper.num_used_parameters + has_cls
+
+        if pe_type == "absolute":
+            self.pos_encoding = PositionalEncoding(embedding_dim, dropout_p=pe_dropout_p)
+        elif pe_type is None:
+            self.pos_encoding = nn.Identity()
+        else:
+            raise NotImplementedError(f"Unknown positional encoding type: {pe_type}.")
+
+        self.cls_token = nn.Parameter(torch.zeros(1, embedding_dim)) if has_cls else None
+
+        self.noncat_idx = torch.tensor(preset_helper.used_noncat_parameters_idx, dtype=torch.long)
+        self.noncat_tokenizer = nn.Parameter(torch.zeros(len(self.noncat_idx), embedding_dim))
+
+        self.cat_idx = torch.tensor(preset_helper.used_cat_parameters_idx, dtype=torch.long)
+        cat_offsets, total_num_cat = self._compute_cat_infos(preset_helper)
+        self.cat_tokenizer = nn.Embedding(num_embeddings=total_num_cat, embedding_dim=embedding_dim)
+        self.register_buffer("cat_offsets", cat_offsets)
+
+    @property
+    def out_length(self) -> int:
+        return self._out_length
+
+    @property
+    def embedding_dim(self) -> int:
+        return self._embedding_dim
+
+    @property
+    def has_cls(self) -> bool:
+        return self.cls_token is not None
+
+    @property
+    def pe_type(self) -> Optional[str]:
+        if isinstance(self.pos_encoding, PositionalEncoding):
+            return "absolute"
+        return None
+
+    @property
+    def num_parameters(self) -> int:
+        return sum(p.numel() for p in self.parameters())
+
+    def init_weights(self):
+        nn.init.trunc_normal_(self.noncat_tokenizer, std=0.02)
+        nn.init.trunc_normal_(self.cat_tokenizer.weight, std=0.02)
+        if self.has_cls:
+            nn.init.trunc_normal_(self.cls_token, std=0.02)
+        if self.pe_type is not None:
+            self.pos_encoding.init_weights()
+
+    def forward(self, x):
+        tokens = torch.zeros((*x.shape, self._embedding_dim), device=x.device)
+
+        # Assign noncat embeddings
+        noncat_tokens = self.noncat_tokenizer * x[:, self.noncat_idx, None]
+        tokens[:, self.noncat_idx] = noncat_tokens
+
+        # Assign cat embeddings
+        cat_tokens = x[:, self.cat_idx].to(dtype=torch.long) + self.cat_offsets
+        tokens[:, self.cat_idx] = self.cat_tokenizer(cat_tokens)
+
+        if self.has_cls:
+            tokens = torch.cat([self.cls_token.expand(x.shape[0], -1, -1), tokens], dim=1)
+
+        tokens = self.pos_encoding(tokens)
+
+        return tokens
+
+    def _compute_cat_infos(self, preset_helper: PresetHelper) -> Tuple[torch.Tensor, int]:
+        """
+        Compute the offsets for each categorical parameter and the total number of categories
+        (i.e., sum over all categorical parameters' cardinality).
+
+        Args
+        - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
+
+        Returns
+        - `cat_offsets` (torch.Tensor): the offsets for each categorical parameter as a list cat_offsets[cat_param_idx] = offset.
+        - `total_num_cat` (int):  total number of categories.
+        """
+        cat_offsets = []
+        offset = 0
+        for i in preset_helper.used_cat_parameters_idx:
+            cardinality = preset_helper.used_parameters[i].cardinality
+            cat_offsets.append(offset)
+            offset += cardinality
+        total_num_cat = offset
+        cat_offsets = torch.tensor(cat_offsets, dtype=torch.long)
+        return cat_offsets, total_num_cat
+
+
+class PositionalEncoding(nn.Module):
+    """
+    Absolute sinusoidal Positional Encoding.
+    Adapted for batch-first inputs from https://pytorch.org/tutorials/beginner/transformer_tutorial.html
+    """
+
+    def __init__(self, embedding_dim: int, dropout_p: float = 0.0, max_len: int = 5000):
+        """
+        Absolute sinusoidal Positional Encoding.
+        Adapted for batch-first inputs from https://pytorch.org/tutorials/beginner/transformer_tutorial.html
+
+        Args:
+        - `embedding_dim` (int): embedding (i.e., model) dimension
+        - `dropout_p` (float): dropout probability
+        - `max_len` (int): maximum sequence length
+        """
+        super().__init__()
+        self.dropout = nn.Dropout(p=dropout_p)
+
+        position = torch.arange(max_len).unsqueeze(1)
+        # equivalent to the original definition, exp for numerical stability
+        div_term = torch.exp(torch.arange(0, embedding_dim, 2) * (-math.log(10000.0) / embedding_dim))
+        pe = torch.zeros(1, max_len, embedding_dim)
+        pe[0, :, 0::2] = torch.sin(position * div_term)
+        pe[0, :, 1::2] = torch.cos(position * div_term)
+        self.register_buffer("pe", pe)
+
+    def init_weights(self) -> None:
+        pass
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args
+        - `x` (torch.Tensor): input tensor of shape (batch_size, seq_len, embedding_dim)
+        """
+        x = x + self.pe[:, : x.shape[1]]
+        return self.dropout(x)
 
 
 if __name__ == "__main__":
@@ -177,14 +298,15 @@ if __name__ == "__main__":
 
     from data.datasets import SynthDatasetPkl
 
-    SYNTH = "tal"
+    SYNTH = "diva"
     BATCH_SIZE = 512
 
-    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    # DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    DEVICE = "cpu"
 
     DATASET_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "datasets"
 
-    if SYNTH == "tal":
+    if SYNTH == "talnm":
         DATASET_PATH = DATASET_FOLDER / "talnm_mn04_size=65536_seed=45858_dev_val_v1"
         PARAMETERS_TO_EXCLUDE_STR = (
             "master_volume",
@@ -199,9 +321,8 @@ if __name__ == "__main__":
             "delay*",
         )
 
-        p_helper = PresetHelper("talnm", PARAMETERS_TO_EXCLUDE_STR)
-
     if SYNTH == "diva":
+        DATASET_PATH = DATASET_FOLDER / "diva_mn04_size=65536_seed=400_hpo_val_v1"
         PARAMETERS_TO_EXCLUDE_STR = (
             "main:output",
             "vcc:*",
@@ -240,7 +361,8 @@ if __name__ == "__main__":
             "vca:mode",
             "vca:offset",
         )
-        p_helper = PresetHelper("diva", PARAMETERS_TO_EXCLUDE_STR)
+
+    p_helper = PresetHelper(SYNTH, PARAMETERS_TO_EXCLUDE_STR)
 
     dataset = SynthDatasetPkl(DATASET_PATH)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
@@ -248,7 +370,19 @@ if __name__ == "__main__":
     oh = OneHotEncoding(p_helper)
     oh.to(DEVICE)
 
+    # ft0 = FTTokenizer(p_helper, 128, False, None)
+    # ft0.to(DEVICE)
+    ft1 = FTTokenizer(p_helper, 128, True, None)
+    ft1.to(DEVICE)
+
+    # with torch.no_grad():
+    #     ft1.noncat_tokenizer.copy_(ft0.noncat_tokenizer)
+    #     ft1.cat_tokenizer.weight.copy_(ft0.cat_tokenizer.weight)
+
     for params, _ in loader:
-        oh(params.to(DEVICE))
+        # enc = oh(params.to(DEVICE))
+        # tok0 = ft0(params.to(DEVICE))
+        tok1 = ft1(params.to(DEVICE))
         break
+
     print("")

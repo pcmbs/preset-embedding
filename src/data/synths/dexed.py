@@ -58,7 +58,7 @@ for i in range(6):
         SynthParameter(
             index=31 + i * 22, name=f"op{i+1}_output_level", type_="num", default_value=1.0 if i == 0 else 0.0
         ),
-        SynthParameter(index=32 + i * 22, name=f"op{i+1}_mode", type_="bin"),
+        SynthParameter(index=32 + i * 22, name=f"op{i+1}_mode", type_="cat", cardinality=2),
         SynthParameter(
             index=33 + i * 22,
             name=f"op{i+1}_f_coarse",

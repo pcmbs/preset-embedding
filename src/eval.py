@@ -59,6 +59,8 @@ def evaluate(cfg: DictConfig) -> None:
     log.info("Running MRR evaluation...")
     mrr_score, ranks_dict = eval_mrr(model=model, dataset=eval_dataset)
 
+    # TODO: add L1 distance
+
     results = {
         "mrr": mrr_score,
         "ranks": ranks_dict,

@@ -42,8 +42,11 @@ class PresetHelper:
             (i, p.index, p.name, p.type) for i, p in enumerate(self._used_parameters)
         ]
         self._used_num_parameters_idx = [p[0] for p in self._used_parameters_descr if p[3] == "num"]
-        self._used_cat_parameters_idx = [p[0] for p in self._used_parameters_descr if p[3] == "cat"]
         self._used_bin_parameters_idx = [p[0] for p in self._used_parameters_descr if p[3] == "bin"]
+        self._used_cat_parameters_idx = [p[0] for p in self._used_parameters_descr if p[3] == "cat"]
+        self._used_noncat_parameters_idx = sorted(
+            self._used_num_parameters_idx + self._used_bin_parameters_idx
+        )
 
         self._relative_idx_from_name = {p.name: i for i, p in enumerate(self._used_parameters)}
 
@@ -99,7 +102,7 @@ class PresetHelper:
         return len(self._used_parameters_idx)
 
     @property
-    def used_parameters_idx(self) -> List[int]:
+    def used_parameters_absolute_idx(self) -> List[int]:
         """
         Return the absolute indices of the used synthesizer parameters.
 
@@ -117,7 +120,7 @@ class PresetHelper:
         Used synthesizer parameters refer to parameters that are allowed
         to vary across training samples and are thus inputs to the preset encoder.
         """
-        return self._used_num_parameters_idx + self._used_bin_parameters_idx
+        return self._used_noncat_parameters_idx
 
     @property
     def used_cat_parameters_idx(self) -> List[int]:

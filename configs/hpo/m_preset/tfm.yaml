@@ -1,0 +1,17 @@
+# @package _global_
+
+defaults:
+  - override /search_space: tfm
+
+m_preset:
+  cfg:
+    _target_: models.preset.tfm_base
+    pe_type: absolute
+    pooling_type: cls
+    last_activation: ReLU
+    block_kwargs:
+      activation: relu
+      dropout: 0.0
+    pe_dropout_p: 0.0
+
+  name: tfm
