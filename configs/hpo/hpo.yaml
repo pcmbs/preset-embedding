@@ -33,11 +33,12 @@ metric_to_optimize: val/mrr
 
 ############ Training configs
 # batch size used for training
+# mlp based: 512; gru: 256; tfm: 256
 batch_size: 512
 
 # number of workers for the train and val dataloader
 num_workers: 0
-num_ranks_mrr: 512
+num_ranks_mrr: 256 # 512
 
 # kwargs for lightning trainer
 trainer:

@@ -11,3 +11,5 @@ m_preset:
     dropout_p: 0.0
 
   name: gru_oh
+
+batch_size: 256
