@@ -5,7 +5,7 @@ defaults:
 
 m_preset:
   cfg:
-    _target_: models.preset.tfm_base
+    _target_: models.preset.tfm
     pe_type: absolute
     pooling_type: cls
     last_activation: ReLU
@@ -16,4 +16,20 @@ m_preset:
 
   name: tfm
 
+# Following necessary, otherwise this is really too slow
 batch_size: 256
+
+train_dataset_size_factor: 1
+val_dataset_size_factor: 1
+
+# should be set to something like 3/4 * (1e6 * train_dataset_size_factor) // batch_size
+# to account for different batch_size and train_dataset_size_factor
+search_space:
+  milestone:
+    kwargs:
+      high: 3000 # 1450
+
+trainer:
+  max_epochs: 1
+  log_every_n_steps: 50
+  val_check_interval: 1.0

@@ -3,8 +3,8 @@ cfg:
   hidden_features: 1024
   num_blocks: 2
   block_kwargs: 
-    norm: LayerNorm
-    act_fn: GELU
+    norm: BatchNorm1d
+    act_fn: ReLU
     dropout_p: 0.0
 
-name: mlp_gelu_oh
+name: mlp_oh

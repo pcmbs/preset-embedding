@@ -103,7 +103,7 @@ class TfmBuilder(nn.Module):
         return x
 
 
-def tfm_base(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
+def tfm(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
     """
     TODO
     """
@@ -124,12 +124,13 @@ def tfm_base(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Mod
 
 if __name__ == "__main__":
     import os
+    from timeit import default_timer as timer
     from pathlib import Path
-    from torch.utils.data import DataLoader
+    from torch.utils.data import DataLoader, Subset
     from data.datasets import SynthDatasetPkl
 
     SYNTH = "diva"
-    BATCH_SIZE = 32
+    BATCH_SIZE = 256
     OUT_FEATURES = 192
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -194,14 +195,23 @@ if __name__ == "__main__":
     p_helper = PresetHelper(SYNTH, PARAMETERS_TO_EXCLUDE_STR)
 
     dataset = SynthDatasetPkl(path_to_dataset=DATASET_PATH, mmap=False)
-    loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
+    dataset = Subset(dataset, list(range(1024)))
+    # loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
 
     print("[num_blocks, hidden_features, mlp_factor] -> number of parameters")
-    for i in [1, 2, 3, 4, 5, 6]:  # num_blocks
-        for j in [128, 256, 512, 768]:  # embedding_dim
-            for k in [1, 2, 3, 4]:  # mlp_ratio
-                tfm = tfm_base(OUT_FEATURES, p_helper, num_blocks=i, hidden_features=j, mlp_factor=k)
-                print(f"[{i}, {j}, {k}] -> {sum(p.numel() for p in tfm.encoder.parameters()):>9}")
+
+    for i in [2, 4, 6, 8]:  # num_blocks
+        for j in [128, 192, 256]:  # embedding_dim
+            for k in [1, 2, 4]:  # mlp_ratio
+                loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
+                tfm = tfm(OUT_FEATURES, p_helper, num_blocks=i, hidden_features=j, mlp_factor=k)
+                tfm.to(DEVICE)
+                start = timer()
+                for synth_params, _ in loader:
+                    out = tfm(synth_params.to(DEVICE))
+                duration = timer() - start
+                num_params = sum(p.numel() for p in tfm.parameters())
+                print(f"[{i}, {j}, {k}]  -> {num_params:.3e} ({duration:.2f}s)")
 
     # tfm = tfm_base(192, p_helper, num_blocks=2, embedding_dim=256, mlp_ratio=2)
     # tfm.to(DEVICE)
@@ -210,7 +220,11 @@ if __name__ == "__main__":
     # print(f"-> TFM: {sum(p.numel() for p in tfm.encoder.parameters())}")
     # print(tfm)
 
+    # num_see_samples = 0
     # for synth_params, _ in loader:
-    #     out = tfm(synth_params.to(DEVICE))
-    #     break
-    # print("")
+    #     _ = synth_params
+    #     # out = tfm(synth_params.to(DEVICE))
+    #     # break
+    #     num_see_samples += synth_params.shape[0]
+
+    # print(num_see_samples)

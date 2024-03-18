@@ -3,30 +3,28 @@
 defaults:
   - override /train_dataset: talnm_mn04_v1
   - override /val_dataset: talnm_mn04_v1
-  - override /m_preset: mlp_relu_raw
+  - override /m_preset: mlp_oh
 
 
 ########## hyperparameters 
-# refined solver HPs for extended number of training steps based on the 3 best HPO trials
 
-m_preset:
+m_preset: # 7_319_232 parameters
   cfg:
-    hidden_features: 1536
-    num_blocks: 2
+    hidden_features: 2560
+    num_blocks: 1
 
 solver:
-  lr: 4.28e-3
+  lr: 1.4e-2
   optimizer:
     betas:
-      - 0.813
-      - 0.918
-    eps: 7.74e-07
+      - 0.798
+      - 0.996
+    eps: 5e-8
 
   scheduler:
-    total_steps: 20000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
-    milestone: 14500 # can also be set to 7500
-    final_lr: 4.28e-4 # following the 0.10 heuristic
-
+    total_steps: 200_000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
+    milestone: 7500
+    final_lr: 1e-6
 
 ########## training setup
 train_dataset:
@@ -35,10 +33,9 @@ train_dataset:
 
 trainer:
   # kwargs for lightning trainer
-  max_epochs: 1
+  max_epochs: 10
   
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
   
-    

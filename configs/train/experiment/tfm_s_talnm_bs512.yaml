@@ -3,28 +3,31 @@
 defaults:
   - override /train_dataset: talnm_mn04_v1
   - override /val_dataset: talnm_mn04_v1
-  - override /m_preset: resnet_oh
+  - override /m_preset: tfm
 
 
 ########## hyperparameters 
 
-m_preset: # 9_098_688 parameters
+m_preset: # 1_656_000 parameters
   cfg:
-    hidden_features: 768 # 512
-    num_blocks: 8 # 6
+    hidden_features: 256
+    num_blocks: 2
+    num_heads: 8
+    mlp_factor: 4
+    pooling_type: cls
 
 solver:
-  lr: 8.94e-3
+  lr: 1e-3
   optimizer:
     betas:
-      - 0.804
-      - 0.931
-    eps: 2.08e-10
+      - 0.89
+      - 0.987
+    eps: 5.0e-10
 
   scheduler:
-    total_steps: 20000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
+    total_steps: 200_000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
     milestone: 7500
-    final_lr: 1.24e-7
+    final_lr: 2.2e-5
 
 ########## training setup
 train_dataset:
@@ -33,9 +36,8 @@ train_dataset:
 
 trainer:
   # kwargs for lightning trainer
-  max_epochs: 1
+  max_epochs: 10
   
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
-  

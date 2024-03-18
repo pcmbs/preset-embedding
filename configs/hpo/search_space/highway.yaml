@@ -6,6 +6,7 @@ num_blocks:
     name: num_blocks
     low: 2
     high: 16
+    step: 2
 
 # number of hidden features for the preset encoder (linear scale)
 hidden_features: 
@@ -14,7 +15,7 @@ hidden_features:
     name: hidden_features
     low: 128
     high: 1024
-    step: 128
+    step: 256
 
 
 ##### scheduler HPs
@@ -31,7 +32,7 @@ base_lr:
   type: float
   kwargs:
     name: base_lr
-    low: 0.0001
+    low: 1e-4
     high: 0.02
     log: true
 
@@ -40,7 +41,7 @@ min_lr:
   type: float
   kwargs:
     name: min_lr
-    low: 0.0000000001
+    low: 1e-8
     high: 0.02
     log: true
 
@@ -69,6 +70,6 @@ eps:
   type: float
   kwargs:
     name: eps
-    low: 0.0000000001
-    high: 0.0001
+    low: 1e-10
+    high: 1e-6
     log: true

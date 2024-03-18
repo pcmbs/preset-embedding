@@ -2,8 +2,8 @@
 
 defaults:
   - ckpt_last
-  - ckpt_train
-  - ckpt_val
+  - ckpt_mrr
+  - ckpt_loss
   - learning_rate_monitor
   - rich_progress_bar
 

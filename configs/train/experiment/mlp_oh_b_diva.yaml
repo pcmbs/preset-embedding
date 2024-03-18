@@ -1,30 +1,30 @@
 # @package _global_
 
 defaults:
-  - override /train_dataset: talnm_mn04_v1
-  - override /val_dataset: talnm_mn04_v1
-  - override /m_preset: highway_oh
+  - override /train_dataset: diva_mn04_v1
+  - override /val_dataset: diva_mn04_v1
+  - override /m_preset: mlp_oh
 
 
 ########## hyperparameters 
 
-m_preset: # 3_459_264 parameters
+m_preset: # 8_110_272 parameters
   cfg:
-    hidden_features: 512
-    num_blocks: 12
+    hidden_features: 2560
+    num_blocks: 1
 
 solver:
-  lr: 8.94e-3
+  lr: 1.4e-2
   optimizer:
     betas:
-      - 0.804
-      - 0.931
-    eps: 2.08e-10
+      - 0.798
+      - 0.996
+    eps: 5e-8
 
   scheduler:
-    total_steps: 20000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
+    total_steps: 200_000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
     milestone: 7500
-    final_lr: 1.24e-7
+    final_lr: 1e-6
 
 ########## training setup
 train_dataset:
@@ -33,7 +33,7 @@ train_dataset:
 
 trainer:
   # kwargs for lightning trainer
-  max_epochs: 1
+  max_epochs: 10
   
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds

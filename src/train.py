@@ -58,7 +58,7 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
         num_workers=cfg.val_dataset.loader.num_workers,
         shuffle=cfg.val_dataset.loader.shuffle,
         pin_memory=cfg.val_dataset.loader.pin_memory,
-        drop_last=cfg.val_dataset.loader.drop_last,
+        drop_last=True,
     )
     check_val_dataset(train_dataset, val_dataset)
 
