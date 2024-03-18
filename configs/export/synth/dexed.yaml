@@ -11,7 +11,7 @@ parameters_to_exclude_str:
   - "master_tune_adj"
   - "*_key_sync"
   - "middle_c"
-  - "p_mode_sens."
+  # - "p_mode_sens."
   - "*_switch"
   - "*_break_point"
   - "*_scale_depth"

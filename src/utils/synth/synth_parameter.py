@@ -66,7 +66,7 @@ class SynthParameter:
             else:
                 assert len(cat_weights) == cardinality
                 cat_weights = tuple(np.array(cat_weights) / np.sum(cat_weights))
-                assert np.sum(cat_weights) == 1
+                assert np.sum(cat_weights).round(3) == 1
 
         self.index = index
         self.name = name

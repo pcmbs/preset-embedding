@@ -1,6 +1,6 @@
 from utils.synth import SynthParameter
 
-# Didn't make Dexed work yet :(
+# Only works on windows for now...
 
 # TODO: add motivation for category weights, modified interval, and excluded params
 
@@ -30,8 +30,13 @@ _GENERAL_PARAMETERS = (
         default_value=0.5,
     ),
     SynthParameter(
-        index=14, name="p_mode_sens.", type_="num", cardinality=8, default_value=1.0
-    ),  # original default_value: 0.4285714328289032 (mod via PMD instead)
+        index=14,
+        name="p_mode_sens.",
+        type_="num",
+        cardinality=8,
+        default_value=1.0,
+        cat_weights=(21, 1, 1, 1, 1, 1, 1, 1),  # no LFO 75% of the time
+    ),  # original default_value: 0.4285714328289032 (exclude?: mod via PMD only ?)
     SynthParameter(index=15, name="pitch_eg_rate_1", type_="num", default_value=1.0),
     SynthParameter(index=16, name="pitch_eg_rate_2", type_="num", default_value=1.0),
     SynthParameter(index=17, name="pitch_eg_rate_3", type_="num", default_value=1.0),

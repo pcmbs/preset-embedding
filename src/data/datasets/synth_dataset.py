@@ -77,7 +77,7 @@ class SynthDataset(Dataset):
         self.midi_velocity = midi_velocity
         self.midi_duration_in_sec = midi_duration_in_sec
         self.render_duration_in_sec = render_duration_in_sec
-
+        self._sample_rate = sample_rate
         self.rms_range = rms_range
 
         if path_to_plugin is None:
@@ -90,21 +90,10 @@ class SynthDataset(Dataset):
             else:
                 raise NotImplementedError()
 
-        path_to_plugin = str(path_to_plugin)
+        self.path_to_plugin = str(path_to_plugin)
 
-        self.renderer = PresetRenderer(
-            synth_path=path_to_plugin,
-            sample_rate=sample_rate,
-            render_duration_in_sec=render_duration_in_sec,
-            convert_to_mono=True,
-            normalize_audio=False,
-            fadeout_in_sec=0.1,
-        )
-
-        # set not used parameters to default values (for safety)
-        self.renderer.set_parameters(
-            self.preset_helper.excl_parameters_idx, self.preset_helper.excl_parameters_val
-        )
+        # instantiate renderer during first iteration to avoid num_workers pickle error on windows
+        self.renderer = None
 
     @property
     def synth_name(self):
@@ -130,7 +119,7 @@ class SynthDataset(Dataset):
     @property
     def sample_rate(self):
         """Return the sample rate of the audio to generate."""
-        return self.renderer.sample_rate
+        return self._sample_rate
 
     @property
     def index_range(self) -> Tuple[int, int]:
@@ -141,6 +130,11 @@ class SynthDataset(Dataset):
         return self.dataset_size
 
     def __getitem__(self, idx: int):
+
+        # instantiate renderer during first iteration to avoid num_workers pickle error on windows
+        if self.renderer is None:
+            self._instantiate_renderer()
+
         rng_cpu = torch.Generator(device="cpu")
         rng_cpu.manual_seed(self.seed_offset + idx)
 
@@ -188,6 +182,22 @@ class SynthDataset(Dataset):
                     cat_parameters_idx += indices
 
         return rnd_parameters, cat_parameters_int, cat_parameters_idx
+
+    def _instantiate_renderer(self):
+        # instantiate renderer during first iteration to avoid num_workers pickle error on windows
+        self.renderer = PresetRenderer(
+            synth_path=self.path_to_plugin,
+            sample_rate=self.sample_rate,
+            render_duration_in_sec=self.render_duration_in_sec,
+            convert_to_mono=True,
+            normalize_audio=False,
+            fadeout_in_sec=0.1,
+        )
+
+        # set not used parameters to default values (for safety)
+        self.renderer.set_parameters(
+            self.preset_helper.excl_parameters_idx, self.preset_helper.excl_parameters_val
+        )
 
 
 if __name__ == "__main__":
