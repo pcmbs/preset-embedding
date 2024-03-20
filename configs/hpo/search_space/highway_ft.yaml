@@ -14,8 +14,16 @@ hidden_features:
   kwargs:
     name: hidden_features
     low: 128
-    high: 896 #1024
-    step: 256
+    high: 1024
+    step: 128
+
+token_dim: 
+  type: int
+  kwargs:
+    name: token_dim
+    low: 64
+    high: 256
+    step: 64
 
 
 ##### scheduler HPs
@@ -24,8 +32,8 @@ milestone:
   type: int
   kwargs:
     name: milestone
-    low: 0
-    high: 1500
+    low: 1450
+    high: 1450
 
 # starting learning rate
 base_lr: 

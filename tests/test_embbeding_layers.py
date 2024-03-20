@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from data.datasets import SynthDataset
-from models.preset.embedding_layers import RawParameters, OneHotEncoding, FTTokenizer
+from models.preset.embedding_layers import RawParameters, OneHotEncoding, PresetTokenizer
 from utils.synth import PresetHelper
 
 NUM_SAMPLES = 32
@@ -201,8 +201,8 @@ def test_onehot_params_emb_layer_diva(diva_dataset):
 def test_tokenizer_talnm(talnm_dataset):
     EMB_DIM = 128
     # one with cls, one without. Both without PE
-    ft0 = FTTokenizer(talnm_dataset.preset_helper, embedding_dim=EMB_DIM, has_cls=False, pe_type=None)
-    ft1 = FTTokenizer(talnm_dataset.preset_helper, embedding_dim=EMB_DIM, has_cls=True, pe_type=None)
+    ft0 = PresetTokenizer(talnm_dataset.preset_helper, token_dim=EMB_DIM, has_cls=False, pe_type=None)
+    ft1 = PresetTokenizer(talnm_dataset.preset_helper, token_dim=EMB_DIM, has_cls=True, pe_type=None)
 
     with torch.no_grad():
         ft1.noncat_tokenizer.copy_(ft0.noncat_tokenizer)
@@ -222,8 +222,8 @@ def test_tokenizer_talnm(talnm_dataset):
 def test_tokenizer_diva(diva_dataset):
     EMB_DIM = 128
     # one with cls, one without. Both without PE
-    ft0 = FTTokenizer(diva_dataset.preset_helper, embedding_dim=EMB_DIM, has_cls=False, pe_type=None)
-    ft1 = FTTokenizer(diva_dataset.preset_helper, embedding_dim=EMB_DIM, has_cls=True, pe_type=None)
+    ft0 = PresetTokenizer(diva_dataset.preset_helper, token_dim=EMB_DIM, has_cls=False, pe_type=None)
+    ft1 = PresetTokenizer(diva_dataset.preset_helper, token_dim=EMB_DIM, has_cls=True, pe_type=None)
 
     with torch.no_grad():
         ft1.noncat_tokenizer.copy_(ft0.noncat_tokenizer)

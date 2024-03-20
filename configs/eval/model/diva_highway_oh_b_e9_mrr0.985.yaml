@@ -1,0 +1,12 @@
+cfg: # 8_307_904 parameters
+  _target_: models.preset.highway_oh
+  hidden_features: 896
+  num_blocks: 6
+  block_kwargs: 
+    norm: BatchNorm1d
+    act_fn: ReLU
+    dropout_p: 0.0
+
+name: diva_highway_oh_b_e9_mrr0.7903
+
+ckpt_path: ${paths.log_dir}/highway_oh/diva_mn04_train_v1/diva_highway_oh_b_e10/checkpoints/highway_oh_diva_mn04_train_v1_e7_mrr0.7903.ckpt

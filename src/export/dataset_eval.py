@@ -1,7 +1,9 @@
 import json
+import os
 from pathlib import Path
 from typing import Union
 
+from dotenv import load_dotenv
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -12,6 +14,9 @@ from utils.evaluation import ProcessEvalPresets, RenderPreset
 from utils.synth import PresetHelper
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+load_dotenv()
+DATASETS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "datasets"
 
 
 def keystoint(x):
@@ -44,6 +49,7 @@ def generate_eval_dataset(
     required_keys = [
         "synth",
         "params_to_exclude",
+        "num_used_params",
         "render_duration_in_sec",
         "midi_note",
         "midi_velocity",
@@ -151,21 +157,15 @@ def generate_eval_dataset(
 
 
 if __name__ == "__main__":
-    import os
-    from dotenv import load_dotenv
 
-    load_dotenv()
+    SYNTH = "diva"
+    VERSION = 1
 
-    DATASETS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "datasets"
+    # path to the dataset used for training and to the json dataset
+    PATH_TO_TRAIN_DATASET = DATASETS_FOLDER / f"{SYNTH}_mn04_size=10240000_seed=500_train_v{VERSION}"
+    PATH_TO_JSON_DATASET = DATASETS_FOLDER / "eval" / "json_datasets" / f"{SYNTH}_dataset.json"
 
-    # indicate the path to the train dataset here
-    PATH_TO_TRAIN_DATASET = DATASETS_FOLDER / "talnm_mn04_size=10240000_seed=500_train_v1"
-
-    # indicate the path to the json dataset here
-    PATH_TO_JSON_DATASET = DATASETS_FOLDER / "json_datasets" / "talnm_dataset.json"
-
-    # indicate the path to the export folder here
-    export_path = DATASETS_FOLDER / "eval" / "talnm_mn04_eval_v1"
+    export_path = DATASETS_FOLDER / "eval" / f"{SYNTH}_mn04_eval_v{VERSION}"
     if not export_path.exists():
         export_path.mkdir(exist_ok=True, parents=True)
 

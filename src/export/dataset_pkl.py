@@ -221,4 +221,19 @@ def export_dataset_pkl(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
+    import sys
+
+    args = [
+        "src/export/dataset_pkl.py",
+        "synth=talnm",
+        "dataset_size=131072",
+        "seed_offset=600",
+        "tag=test_v1",
+    ]
+
+    sys.argv = args
+
+    gettrace = getattr(sys, "gettrace", None)
+    if gettrace():
+        sys.argv = args
     export_dataset_pkl()  # pylint: disable=E1120:no-value-for-parameter̦

@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 # FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime as dev 
 FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-runtime as dev
+# FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-devel as dev
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1

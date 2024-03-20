@@ -6,9 +6,9 @@ defaults:
 
 # output directory, generated dynamically on each run
 run:
-  dir: ${paths.log_dir}/eval/${dataset.name}/${model.ckpt_name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
+  dir: ${paths.log_dir}/eval/${synth.name}/${model.name}
 sweep:
-  dir: ${paths.log_dir}/eval/${dataset.name}/${model.ckpt_name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
+  dir: ${paths.log_dir}/eval/${synth.name}/${model.name}
   subdir: ${hydra.job.num}
 
 job_logging:

@@ -3,7 +3,7 @@ from typing import Dict
 import torch
 from torch import nn
 
-from models.preset.embedding_layers import FTTokenizer
+from models.preset.embedding_layers import PresetTokenizer
 from utils.synth import PresetHelper
 
 # Resources:
@@ -35,7 +35,7 @@ class TfmBuilder(nn.Module):
         self.pooling_type = pooling_type
 
         self.tokenizer = tokenizer(
-            embedding_dim=hidden_features, has_cls=pooling_type == "cls", pe_type=pe_type, **tokenizer_kwargs
+            token_dim=hidden_features, has_cls=pooling_type == "cls", pe_type=pe_type, **tokenizer_kwargs
         )
 
         # Encoder
@@ -103,23 +103,23 @@ class TfmBuilder(nn.Module):
         return x
 
 
-def tfm(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
-    """
-    TODO
-    """
-    return TfmBuilder(
-        out_features=out_features,
-        tokenizer=FTTokenizer,
-        pe_type=kwargs.get("pe_type", "absolute"),
-        hidden_features=kwargs.get("hidden_features", 256),
-        num_blocks=kwargs.get("num_blocks", 6),
-        num_heads=kwargs.get("num_heads", 4),
-        mlp_factor=kwargs.get("mlp_factor", 2.0),
-        pooling_type=kwargs.get("pooling_type", "cls"),
-        last_activation=kwargs.get("last_activation", "ReLU"),
-        tokenizer_kwargs={"preset_helper": preset_helper, "pe_dropout_p": kwargs.get("pe_dropout_p", 0.0)},
-        block_kwargs=kwargs.get("block_kwargs", {"activation": "relu", "dropout": 0.0}),
-    )
+# def tfm(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
+#     """
+#     TODO
+#     """
+#     return TfmBuilder(
+#         out_features=out_features,
+#         tokenizer=PresetTokenizer,
+#         pe_type=kwargs.get("pe_type", "absolute"),
+#         hidden_features=kwargs.get("hidden_features", 256),
+#         num_blocks=kwargs.get("num_blocks", 6),
+#         num_heads=kwargs.get("num_heads", 4),
+#         mlp_factor=kwargs.get("mlp_factor", 2.0),
+#         pooling_type=kwargs.get("pooling_type", "cls"),
+#         last_activation=kwargs.get("last_activation", "ReLU"),
+#         tokenizer_kwargs={"preset_helper": preset_helper, "pe_dropout_p": kwargs.get("pe_dropout_p", 0.0)},
+#         block_kwargs=kwargs.get("block_kwargs", {"activation": "relu", "dropout": 0.0}),
+#     )
 
 
 if __name__ == "__main__":
@@ -128,6 +128,8 @@ if __name__ == "__main__":
     from pathlib import Path
     from torch.utils.data import DataLoader, Subset
     from data.datasets import SynthDatasetPkl
+
+    from models.preset.model_zoo import tfm
 
     SYNTH = "diva"
     BATCH_SIZE = 256
@@ -200,17 +202,17 @@ if __name__ == "__main__":
 
     print("[num_blocks, hidden_features, mlp_factor] -> number of parameters")
 
-    for i in [2, 4, 6, 8]:  # num_blocks
-        for j in [128, 192, 256]:  # embedding_dim
-            for k in [1, 2, 4]:  # mlp_ratio
+    for i in [6]:  # num_blocks
+        for j in [256, 512]:  # embedding_dim
+            for k in [4]:  # mlp_ratio
                 loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
-                tfm = tfm(OUT_FEATURES, p_helper, num_blocks=i, hidden_features=j, mlp_factor=k)
-                tfm.to(DEVICE)
+                model = tfm(OUT_FEATURES, p_helper, num_blocks=i, hidden_features=j, mlp_factor=k)
+                model.to(DEVICE)
                 start = timer()
-                for synth_params, _ in loader:
-                    out = tfm(synth_params.to(DEVICE))
+                # for synth_params, _ in loader:
+                #     out = model(synth_params.to(DEVICE))
                 duration = timer() - start
-                num_params = sum(p.numel() for p in tfm.parameters())
+                num_params = sum(p.numel() for p in model.parameters())
                 print(f"[{i}, {j}, {k}]  -> {num_params:.3e} ({duration:.2f}s)")
 
     # tfm = tfm_base(192, p_helper, num_blocks=2, embedding_dim=256, mlp_ratio=2)

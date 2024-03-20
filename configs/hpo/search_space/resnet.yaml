@@ -14,7 +14,7 @@ hidden_features:
   kwargs:
     name: hidden_features
     low: 128
-    high: 1024
+    high: 896 #1024
     step: 256
 
 

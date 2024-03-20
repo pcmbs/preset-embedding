@@ -92,7 +92,7 @@ class SynthDataset(Dataset):
 
         self.path_to_plugin = str(path_to_plugin)
 
-        # instantiate renderer during first iteration to avoid num_workers pickle error on windows
+        # instantiate renderer during first iteration to avoid possible pickle errors
         self.renderer = None
 
     @property
@@ -201,4 +201,37 @@ class SynthDataset(Dataset):
 
 
 if __name__ == "__main__":
+    import os
+    from pathlib import Path
+    from torch.utils.data import DataLoader
+
+    BATCH_SIZE = 16
+
+    # DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    DEVICE = "cuda"
+
+    SYNTH = "talnm"
+
+    PARAMETERS_TO_EXCLUDE_STR = (
+        "master_volume",
+        "voices",
+        "lfo_1_sync",
+        "lfo_1_keytrigger",
+        "lfo_2_sync",
+        "lfo_2_keytrigger",
+        "envelope*",
+        "portamento*",
+        "pitchwheel*",
+        "delay*",
+    )
+
+    p_helper = PresetHelper(SYNTH, PARAMETERS_TO_EXCLUDE_STR)
+
+    dataset = SynthDataset(preset_helper=p_helper, dataset_size=1024, seed_offset=5423)
+
+    loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=8)
+
+    for i, (params, audio, _) in enumerate(loader):
+        print(i, params.shape, audio.shape)
+
     print("")

@@ -131,7 +131,7 @@ class OneHotEncoding(nn.Module):
         return cat_offsets, total_num_cat
 
 
-class FTTokenizer(nn.Module):
+class PresetTokenizer(nn.Module):
     """
     Synth Presets Tokenizer class.
 
@@ -145,7 +145,7 @@ class FTTokenizer(nn.Module):
     def __init__(
         self,
         preset_helper: PresetHelper,
-        embedding_dim: int,
+        token_dim: int,
         has_cls: bool,
         pe_type: Optional[str] = "absolute",
         pe_dropout_p: float = 0.0,
@@ -153,31 +153,31 @@ class FTTokenizer(nn.Module):
         """
         Args
         - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
-        - `embedding_dim` (int): The embedding dimension.
+        - `token_dim` (int): The token embedding dimension.
         - `cls_token` (bool): Whether to add a class token.
         - `pe_type` (Optional[str]): The type of positional encoding. (Defaults: "absolute").
         Pass None to not use positional encoding.
         - `pe_dropout_p` (float): The dropout probability for the positional encoding. (Defaults: 0.0).
         """
         super().__init__()
-        self._embedding_dim = embedding_dim
+        self._embedding_dim = token_dim
         self._out_length = preset_helper.num_used_parameters + has_cls
 
         if pe_type == "absolute":
-            self.pos_encoding = PositionalEncoding(embedding_dim, dropout_p=pe_dropout_p)
+            self.pos_encoding = PositionalEncoding(token_dim, dropout_p=pe_dropout_p)
         elif pe_type is None:
             self.pos_encoding = nn.Identity()
         else:
             raise NotImplementedError(f"Unknown positional encoding type: {pe_type}.")
 
-        self.cls_token = nn.Parameter(torch.zeros(1, embedding_dim)) if has_cls else None
+        self.cls_token = nn.Parameter(torch.zeros(1, token_dim)) if has_cls else None
 
         self.noncat_idx = torch.tensor(preset_helper.used_noncat_parameters_idx, dtype=torch.long)
-        self.noncat_tokenizer = nn.Parameter(torch.zeros(len(self.noncat_idx), embedding_dim))
+        self.noncat_tokenizer = nn.Parameter(torch.zeros(len(self.noncat_idx), token_dim))
 
         self.cat_idx = torch.tensor(preset_helper.used_cat_parameters_idx, dtype=torch.long)
         cat_offsets, total_num_cat = self._compute_cat_infos(preset_helper)
-        self.cat_tokenizer = nn.Embedding(num_embeddings=total_num_cat, embedding_dim=embedding_dim)
+        self.cat_tokenizer = nn.Embedding(num_embeddings=total_num_cat, embedding_dim=token_dim)
         self.register_buffer("cat_offsets", cat_offsets)
 
     @property
@@ -290,6 +290,91 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
+class PresetTokenizerWithGRU(nn.Module):
+    """
+    Preset tokenizer with GRU.
+    This module tokenize a batch of presets and then applies a bi-GRU to the output.
+    The output is a 2D context vector (batch_size, embedding_dim) made up of the bi-GRU's last hidden state,
+    which can be used as input of a MLP based network.
+    """
+
+    def __init__(
+        self,
+        preset_helper: PresetHelper,
+        token_dim: int,
+        gru_hidden_factor: int = 1,
+        gru_num_layers: int = 1,
+        gru_dropout_p: float = 0.0,
+        pe_dropout_p: float = 0.0,
+    ):
+        """
+        Preset tokenizer with GRU.
+        This module tokenize a batch of presets and then applies a bi-GRU to the output.
+        The output is a 2D context vector (batch_size, embedding_dim) made up of the bi-GRU's last hidden state,
+        which can be used as input of a MLP based network as alternative to flattening the sequence of tokens.
+
+        Args:
+        - `preset_helper` (PresetHelper): preset helper
+        - `token_dim` (int): token dimension
+        - `gru_hidden_factor` (int): bi-GRU hidden factor as a multiple of `token_dim`
+        - `gru_num_layers` (int): number of GRU layers
+        - `gru_dropout_p` (float): GRU dropout probability
+        - `pe_dropout_p` (float): positional encoding dropout probability
+        """
+        super().__init__()
+        self._embedding_dim = gru_hidden_factor * token_dim
+
+        self.tokenizer = PresetTokenizer(
+            preset_helper=preset_helper,
+            token_dim=token_dim,
+            has_cls=False,
+            pe_type="absolute",
+            pe_dropout_p=pe_dropout_p,
+        )
+
+        self.gru = nn.GRU(
+            input_size=token_dim,
+            hidden_size=gru_hidden_factor * token_dim // 2,  # // 2 since bi-GRU
+            num_layers=gru_num_layers,
+            bidirectional=True,
+            batch_first=True,
+            dropout=gru_dropout_p,
+        )
+
+        self.init_weights()
+
+    @property
+    def out_length(self) -> int:
+        return 1
+
+    @property
+    def embedding_dim(self) -> int:
+        return self._embedding_dim
+
+    def init_weights(self) -> None:
+        self.tokenizer.init_weights()
+
+        for name, param in self.gru.named_parameters():
+            if "weight_ih" in name:
+                nn.init.xavier_normal_(param)
+            elif "weight_hh" in name:
+                nn.init.orthogonal_(param)
+            elif "bias" in name:
+                nn.init.zeros_(param)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Args
+        - `x` (torch.Tensor): input tensor of shape (batch_size, seq_len)
+        """
+        n = x.shape[0]  # batch size
+        x = self.tokenizer(x)
+        _, x = self.gru(x)
+        # get bi-GRU last layer's last hidden state and reshape
+        x = x[-2:].transpose(0, 1).reshape(n, -1)
+        return x
+
+
 if __name__ == "__main__":
     import os
     from pathlib import Path
@@ -372,7 +457,7 @@ if __name__ == "__main__":
 
     # ft0 = FTTokenizer(p_helper, 128, False, None)
     # ft0.to(DEVICE)
-    ft1 = FTTokenizer(p_helper, 128, True, None)
+    ft1 = PresetTokenizer(p_helper, 128, True, None)
     ft1.to(DEVICE)
 
     # with torch.no_grad():

@@ -5,7 +5,7 @@ num_blocks:
   kwargs:
     name: num_blocks
     low: 2
-    high: 16
+    high: 12
     step: 2
 
 # number of hidden features for the preset encoder (linear scale)
@@ -14,8 +14,24 @@ hidden_features:
   kwargs:
     name: hidden_features
     low: 128
-    high: 896 #1024
-    step: 256
+    high: 1024
+    step: 128
+
+token_dim: 
+  type: int
+  kwargs:
+    name: token_dim
+    low: 64
+    high: 512
+    step: 64
+
+# gru_hidden_factor: 
+#   type: int
+#   kwargs:
+#     name: gru_hidden_factor
+#     low: 1
+#     high: 4
+#     step: 1
 
 
 ##### scheduler HPs
@@ -24,8 +40,8 @@ milestone:
   type: int
   kwargs:
     name: milestone
-    low: 0
-    high: 1500
+    low: 1450
+    high: 1450
 
 # starting learning rate
 base_lr: 

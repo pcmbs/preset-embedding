@@ -7,7 +7,13 @@ from typing import Dict, Optional
 import torch
 from torch import nn
 
-from models.preset.embedding_layers import RawParameters, OneHotEncoding, FTTokenizer, PositionalEncoding
+from models.preset.embedding_layers import (
+    RawParameters,
+    OneHotEncoding,
+    PresetTokenizer,
+    PositionalEncoding,
+    PresetTokenizerWithGRU,
+)
 from utils.synth import PresetHelper
 
 #################### BUILDING BLOCKS ####################
@@ -283,94 +289,108 @@ class MlpBuilder(nn.Module):
         return x
 
 
-#################### MODELS ####################
-
-
-def mlp_raw(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
-    """
-    MLP with BatchNorm+ReLU blocks and and raw parameter values in range [0,1].
-    """
-    return MlpBuilder(
-        out_features=out_features,
-        embedding_layer=RawParameters,
-        block_layer=MLPBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
-        block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
-        embedding_kwargs={"preset_helper": preset_helper},
-    )
-
-
-def mlp_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
-    """
-    MLP with One-Hot encoded categorical synthesizer parameters.
-    """
-    return MlpBuilder(
-        out_features=out_features,
-        embedding_layer=OneHotEncoding,
-        block_layer=MLPBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
-        block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
-        embedding_kwargs={"preset_helper": preset_helper},
-    )
-
-
-def highway_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
-    """
-    Highway MLP and One-Hot encoded categorical synthesizer parameters.
-    """
-    return MlpBuilder(
-        out_features=out_features,
-        embedding_layer=OneHotEncoding,
-        block_layer=HighwayBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
-        block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
-        embedding_kwargs={"preset_helper": preset_helper},
-    )
-
-
-def resnet_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
-    """
-    ResNet with One-Hot encoded categorical synthesizer parameters.
-    """
-    return MlpBuilder(
-        out_features=out_features,
-        embedding_layer=OneHotEncoding,
-        block_layer=ResNetBlock,
-        hidden_features=kwargs.get("hidden_features", 256),
-        num_blocks=kwargs.get("num_blocks", 4),
-        block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU"}),
-        embedding_kwargs={"preset_helper": preset_helper},
-    )
-
-
 if __name__ == "__main__":
+    import os
+    from pathlib import Path
+    from torch.utils.data import DataLoader
 
-    PARAMETERS_TO_EXCLUDE_STR = (
-        "master_volume",
-        "voices",
-        "lfo_1_sync",
-        "lfo_1_keytrigger",
-        "lfo_2_sync",
-        "lfo_2_keytrigger",
-        "envelope*",
-        "portamento*",
-        "pitchwheel*",
-        "delay*",
+    from data.datasets import SynthDatasetPkl
+    from models.preset.model_zoo import highway_ft, highway_ftgru
+
+    SYNTH = "diva"
+    BATCH_SIZE = 32
+
+    # DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    DEVICE = "cpu"
+
+    DATASET_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "datasets"
+
+    if SYNTH == "talnm":
+        DATASET_PATH = DATASET_FOLDER / "talnm_mn04_size=65536_seed=45858_dev_val_v1"
+        PARAMETERS_TO_EXCLUDE_STR = (
+            "master_volume",
+            "voices",
+            "lfo_1_sync",
+            "lfo_1_keytrigger",
+            "lfo_2_sync",
+            "lfo_2_keytrigger",
+            "envelope*",
+            "portamento*",
+            "pitchwheel*",
+            "delay*",
+        )
+
+    if SYNTH == "diva":
+        DATASET_PATH = DATASET_FOLDER / "diva_mn04_size=65536_seed=400_hpo_val_v1"
+        PARAMETERS_TO_EXCLUDE_STR = (
+            "main:output",
+            "vcc:*",
+            "opt:*",
+            "scope1:*",
+            "clk:*",
+            "arp:*",
+            "plate1:*",
+            "delay1:*",
+            "chrs2:*",
+            "phase2:*",
+            "rtary2:*",
+            "*keyfollow",
+            "*velocity",
+            "env1:model",
+            "env2:model",
+            "*trigger",
+            "*release_on",
+            "env1:quantise",
+            "env2:quantise",
+            "env1:curve",
+            "env2:curve",
+            "lfo1:sync",
+            "lfo2:sync",
+            "lfo1:restart",
+            "lfo2:restart",
+            "mod:rectifysource",
+            "mod:invertsource",
+            "mod:addsource*",
+            "*revision",
+            "vca:pan",
+            "vca:volume",
+            "vca:vca",
+            "vca:panmodulation",
+            "vca:panmoddepth",
+            "vca:mode",
+            "vca:offset",
+        )
+
+    p_helper = PresetHelper(SYNTH, PARAMETERS_TO_EXCLUDE_STR)
+
+    dataset = SynthDatasetPkl(DATASET_PATH)
+    loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
+
+    model = highway_ft(
+        out_features=dataset.num_used_synth_parameters,
+        preset_helper=p_helper,
+        num_blocks=12,
+        hidden_features=768,
+        token_dim=128,
     )
 
-    p_helper = PresetHelper("talnm", PARAMETERS_TO_EXCLUDE_STR)
+    # model = highway_ftgru(
+    #     out_features=dataset.num_used_synth_parameters,
+    #     preset_helper=p_helper,
+    #     num_blocks=12,
+    #     hidden_features=1024,
+    #     token_dim=256,
+    #     gru_hidden_factor=4,
+    #     gru_num_layers=1,
+    # )
 
-    # model = resnet_oh(192, p_helper, num_blocks=6, hidden_features=512)
-    # model = highway_oh(192, p_helper, num_blocks=12, hidden_features=512)
-    # print(model.num_parameters)
-    # print(model)
-    model = mlp_oh  # resnet_oh
-    print("[num_blocks, hidden_features] -> number of parameters")
-    for i in range(1, 4):
-        for j in range(128, 4096 + 128, 128):
-            net = model(192, p_helper, num_blocks=i, hidden_features=j)
-            print(f"[{i:>2}, {j:>4}] -> {net.num_parameters:.3e}")
+    model.to(DEVICE)
+    print(model)
+    print(f"Number of parameters: {model.num_parameters}")
+
+    # for presets, _ in loader:
+    #     out = model(presets.to(DEVICE))
+    #     break
+
+    # print(f"Output shape: {out.shape}")
     print("")

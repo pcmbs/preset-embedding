@@ -1,4 +1,1 @@
-from .mlp_builder import mlp_raw, mlp_oh, highway_oh, resnet_oh
-from .gru_builder import gru_oh
-
-from .tfm_builder import tfm
+from .model_zoo import mlp_raw, mlp_oh, highway_oh, highway_ft, highway_ftgru, resnet_oh, gru_oh, tfm

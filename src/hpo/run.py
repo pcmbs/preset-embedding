@@ -115,7 +115,25 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
 
     # instantiate preset encoder
     model_type = cfg.m_preset.name.split("_")[0]
-    if model_type in ["mlp", "resnet", "highway"]:
+    if cfg.m_preset.name in ["highway_ftgru", "highway_ft"]:
+        preset_encoder: nn.Module = hydra.utils.instantiate(
+            cfg.m_preset.cfg,
+            out_features=train_dataset.embedding_dim,
+            preset_helper=preset_helper,
+            token_dim=hps["token_dim"],
+            num_blocks=hps["num_blocks"],
+            hidden_features=hps["hidden_features"],
+        )
+    elif cfg.m_preset.name == "highway_ft":
+        preset_encoder: nn.Module = hydra.utils.instantiate(
+            cfg.m_preset.cfg,
+            out_features=train_dataset.embedding_dim,
+            preset_helper=preset_helper,
+            token_dim=hps["token_dim"],
+            num_blocks=hps["num_blocks"],
+            hidden_features=hps["hidden_features"],
+        )
+    elif model_type in ["mlp", "resnet", "highway"]:
         preset_encoder: nn.Module = hydra.utils.instantiate(
             cfg.m_preset.cfg,
             out_features=train_dataset.embedding_dim,
