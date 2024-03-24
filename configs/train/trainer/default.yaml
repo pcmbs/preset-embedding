@@ -17,7 +17,7 @@ log_every_n_steps: 250
 
 # How often to check the validation set. Pass a float in the range [0.0, 1.0] 
 # to check after a fraction of the training epoch. (Default: 1)
-val_check_interval: 0.25
+val_check_interval: 0.5 # 2 times per epoch since we have a large train set
 
 # Enable anomaly detection for the autograd engine
 detect_anomaly: False

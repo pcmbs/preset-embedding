@@ -1,0 +1,21 @@
+# @package _global_
+
+defaults:
+  - override /synth: diva
+
+model: 
+  cfg: # 16_937_901 parameters
+    _target_: models.preset.highway_ft
+    hidden_features: 768
+    num_blocks: 8
+    block_kwargs: 
+      norm: BatchNorm1d
+      act_fn: ReLU
+      dropout_p: 0.0
+    embedding_kwargs:
+      token_dim: 64
+      pe_dropout_p: 0.0
+
+task_name: diva_highway_ft_l
+
+ckpt_path: ${paths.ckpt_dir}/diva_highway_ft_l_e8_mrr0.8041.ckpt

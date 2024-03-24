@@ -302,6 +302,7 @@ class PresetTokenizerWithGRU(nn.Module):
         self,
         preset_helper: PresetHelper,
         token_dim: int,
+        pre_norm: bool = False,
         gru_hidden_factor: int = 1,
         gru_num_layers: int = 1,
         gru_dropout_p: float = 0.0,
@@ -316,6 +317,7 @@ class PresetTokenizerWithGRU(nn.Module):
         Args:
         - `preset_helper` (PresetHelper): preset helper
         - `token_dim` (int): token dimension
+        - `pre_norm` (bool): whether to apply layer normalization on the token, before GRU.
         - `gru_hidden_factor` (int): bi-GRU hidden factor as a multiple of `token_dim`
         - `gru_num_layers` (int): number of GRU layers
         - `gru_dropout_p` (float): GRU dropout probability
@@ -331,6 +333,8 @@ class PresetTokenizerWithGRU(nn.Module):
             pe_type="absolute",
             pe_dropout_p=pe_dropout_p,
         )
+
+        self.pre_norm = nn.LayerNorm(token_dim) if pre_norm else nn.Identity()
 
         self.gru = nn.GRU(
             input_size=token_dim,
@@ -369,6 +373,7 @@ class PresetTokenizerWithGRU(nn.Module):
         """
         n = x.shape[0]  # batch size
         x = self.tokenizer(x)
+        x = self.pre_norm(x)
         _, x = self.gru(x)
         # get bi-GRU last layer's last hidden state and reshape
         x = x[-2:].transpose(0, 1).reshape(n, -1)

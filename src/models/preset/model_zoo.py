@@ -23,8 +23,8 @@ def mlp_raw(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Modu
         out_features=out_features,
         embedding_layer=RawParameters,
         block_layer=MLPBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
+        hidden_features=kwargs.get("hidden_features", 2560),
+        num_blocks=kwargs.get("num_blocks", 1),
         block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
         embedding_kwargs={"preset_helper": preset_helper},
     )
@@ -38,8 +38,8 @@ def mlp_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Modul
         out_features=out_features,
         embedding_layer=OneHotEncoding,
         block_layer=MLPBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
+        hidden_features=kwargs.get("hidden_features", 2560),
+        num_blocks=kwargs.get("num_blocks", 1),
         block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
         embedding_kwargs={"preset_helper": preset_helper},
     )
@@ -53,8 +53,8 @@ def highway_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.M
         out_features=out_features,
         embedding_layer=OneHotEncoding,
         block_layer=HighwayBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
+        hidden_features=kwargs.get("hidden_features", 768),
+        num_blocks=kwargs.get("num_blocks", 6),
         block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
         embedding_kwargs={"preset_helper": preset_helper},
     )
@@ -83,12 +83,12 @@ def highway_ft(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.M
         out_features=out_features,
         embedding_layer=PresetTokenizer,
         block_layer=HighwayBlock,
-        hidden_features=kwargs.get("hidden_features", 1024),
-        num_blocks=kwargs.get("num_blocks", 2),
+        hidden_features=kwargs.get("hidden_features", 512),
+        num_blocks=kwargs.get("num_blocks", 6),
         block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
         embedding_kwargs={
             "preset_helper": preset_helper,
-            "token_dim": kwargs.get("token_dim", 32),
+            "token_dim": kwargs.get("token_dim", 64),
             "pe_type": None,
             "has_cls": False,
             "pe_dropout_p": kwargs.get("pe_dropout_p", 0.0),
@@ -104,12 +104,13 @@ def highway_ftgru(out_features: int, preset_helper: PresetHelper, **kwargs) -> n
         out_features=out_features,
         embedding_layer=PresetTokenizerWithGRU,
         block_layer=HighwayBlock,
-        hidden_features=kwargs.get("hidden_features", 896),
+        hidden_features=kwargs.get("hidden_features", 768),
         num_blocks=kwargs.get("num_blocks", 6),
         block_kwargs=kwargs.get("block_kwargs", {"norm": "BatchNorm1d", "act_fn": "ReLU", "dropout_p": 0.0}),
         embedding_kwargs={
             "preset_helper": preset_helper,
-            "token_dim": kwargs.get("token_dim", 256),
+            "token_dim": kwargs.get("token_dim", 384),
+            "pre_norm": kwargs.get("pre_norm", False),
             "gru_hidden_factor": kwargs.get("gru_hidden_factor", 1),
             "gru_num_layers": kwargs.get("gru_num_layers", 1),
             "gru_dropout_p": kwargs.get("gru_dropout_p", 0.0),
@@ -158,4 +159,5 @@ def tfm(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
 
 
 if __name__ == "__main__":
+
     print("")

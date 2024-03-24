@@ -6,10 +6,10 @@ defaults:
 
 # output directory, generated dynamically on each run
 run:
-  dir: ${paths.log_dir}/eval/${synth.name}/${model.name}
+  dir: ${paths.log_dir}/eval/${task_name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
 sweep:
-  dir: ${paths.log_dir}/eval/${synth.name}/${model.name}
-  subdir: ${hydra.job.num}
+  dir: ${paths.log_dir}/eval/multirun_${now:%Y-%m-%d}_${now:%H-%M-%S}
+  subdir: ${hydra.job.num}_${task_name}
 
 job_logging:
   handlers:

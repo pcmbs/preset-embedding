@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - override /synth: diva
+
+model:
+  cfg: # 1_651_885 parameters
+    _target_: models.preset.mlp_oh
+    hidden_features: 1024
+    num_blocks: 1
+    block_kwargs: 
+      norm: BatchNorm1d
+      act_fn: ReLU
+      dropout_p: 0.0
+
+task_name: diva_mlp_oh_s
+
+ckpt_path: ${paths.ckpt_dir}/diva_mlp_oh_s_e7_mrr0.5605.ckpt

@@ -1,10 +1,10 @@
 # pylint: disable=W1203:logging-fstring-interpolation
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import torch
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Subset
 from torch import nn
 
 log = logging.getLogger(__name__)
@@ -46,15 +46,14 @@ def compute_mrr(preds: torch.Tensor, targets: torch.Tensor, index: int = 0, p: i
     return (1 / (ranks + 1)).mean().item()
 
 
-def hc_eval_mrr(model: nn.Module, dataset: Dataset, p: int = 1) -> Tuple[float, List, Dict]:
+def hc_eval_mrr(model: nn.Module, dataset: Union[Dataset, Subset], p: int = 1) -> Tuple[float, List, Dict]:
     """
     Function computing the Mean Reciprocal Rank (MRR) metric using `torch.cdist` to be used for evaluation.
     The rank of each samples in the dataset is computed by considering all other samples in the dataset.
 
     Args
     - `model` (nn.Module): model to be evaluated
-    - `dataset` (Dataset): dataset used for evaluation. Note that the first batch taken from this
-    dataset will be used as targets in each evaluation
+    - `dataset` (Union[Dataset, Subset]): dataset used for evaluation.
     - `p` (int): p value for the p-norm used to compute the distances between each prediction and the target
     in each evaluation. (default: 1)
 
@@ -71,9 +70,14 @@ def hc_eval_mrr(model: nn.Module, dataset: Dataset, p: int = 1) -> Tuple[float, 
 
     # get model device
     device = next(model.parameters()).device
-
-    preset_embeddings = torch.empty((len(dataset), dataset.embedding_dim), device=device)
-    audio_embeddings = torch.empty((len(dataset), dataset.embedding_dim), device=device)
+    if isinstance(dataset, Subset):
+        embedding_dim = dataset.dataset.embedding_dim
+    elif isinstance(dataset, Dataset):
+        embedding_dim = dataset.embedding_dim
+    else:
+        raise ValueError("Unsupported dataset type")
+    preset_embeddings = torch.empty((len(dataset), embedding_dim), device=device)
+    audio_embeddings = torch.empty((len(dataset), embedding_dim), device=device)
 
     # compute preset embeddings and retrieve audio embeddings
     model.eval()
@@ -195,3 +199,19 @@ def top_k_mrr_score(ranks: Dict, k: int = 5) -> float:
     num_targets = sum(len(val) for val in ranks.values())
     recriprocal_rank_at_k = sum(len(ranks.get(rank, [])) / rank for rank in range(1, k + 1))
     return recriprocal_rank_at_k / num_targets
+
+
+def get_non_repeating_integers(N: int, K: int) -> List[float]:
+    """
+    Return a list of K non repeating integers between 0 and N.
+    """
+    assert K <= N
+    arr = torch.arange(0, N)
+
+    # Shuffle the array
+    arr_shuffled = arr[torch.randperm(N)]
+
+    # Take only the first K entries
+    result = arr_shuffled[:K]
+
+    return result.tolist()

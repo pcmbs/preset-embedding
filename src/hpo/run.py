@@ -24,6 +24,7 @@ import hydra
 import numpy as np
 import lightning as L
 from lightning import Trainer
+from lightning.pytorch.plugins.environments import SLURMEnvironment
 from omegaconf import OmegaConf, DictConfig
 import optuna
 from optuna.integration import PyTorchLightningPruningCallback
@@ -196,6 +197,8 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
     logger = hydra.utils.instantiate(cfg.wandb, name=f"trial_{trial.number}") if cfg.get("wandb") else []
 
     # instantiate Lightning Trainer
+    # don't auto detect SLURM environment
+    SLURMEnvironment.detect = lambda: False
     trainer = Trainer(
         max_epochs=cfg.trainer.max_epochs,
         val_check_interval=cfg.trainer.val_check_interval,

@@ -2,7 +2,7 @@ _target_: models.lit_module.PresetEmbeddingLitModule
 _convert_: all # somehow resolves an omegaconf missing key error during trainer.fit setup
 
 wandb_watch_args:
-  log: gradients
+  log: null
   log_freq: 100 
 
 loss:
@@ -14,14 +14,14 @@ optimizer:
   weight_decay: 0.0
 
 # Learning Rate
-lr: 0.007
+lr: 1e-3
 
 # LR scheduler
 scheduler:
   _target_: utils.lr_schedulers.lin_cos_scheduler_builder
   _partial_: true
   # total_steps: # should be (num_epochs * num_training_examples) / batch_size
-  milestone: 1400
-  final_lr: 0.0000001
+  milestone: 1450
+  final_lr: 1e-7
   linear_start_factor: 1
   linear_end_factor: 1

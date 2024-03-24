@@ -1,0 +1,18 @@
+# @package _global_
+
+defaults:
+  - override /synth: talnm
+
+model:
+  cfg: # 1_661_499 parameters
+    _target_: models.preset.highway_oh
+    hidden_features: 512
+    num_blocks: 4
+    block_kwargs: 
+      norm: BatchNorm1d
+      act_fn: ReLU
+      dropout_p: 0.0
+
+task_name: talnm_highway_oh_s
+
+ckpt_path: ${paths.ckpt_dir}/talnm_highway_oh_s_e9_mrr0.9723.ckpt

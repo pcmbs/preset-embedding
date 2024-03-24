@@ -1,0 +1,45 @@
+# @package _global_
+
+defaults:
+  - override /train_dataset: talnm_mn04_v1
+  - override /val_dataset: talnm_mn04_v1
+  - override /m_preset: highway_ft
+
+task_name: talnm_highway_ft_b
+
+########## hyperparameters 
+
+m_preset: # 4_600_315 parameters
+  cfg:
+    num_blocks: 6
+    hidden_features: 512
+    embedding_kwargs:
+      token_dim: 64
+
+solver:
+  lr: 1e-2
+  
+  optimizer:
+    betas:
+      - 0.800
+      - 0.948
+    eps: 2e-7
+
+  scheduler:
+    total_steps: 200_000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
+    milestone: 7500
+    final_lr: 2e-6
+
+########## training setup
+train_dataset:
+  loader:
+    batch_size: 512
+
+trainer:
+  # kwargs for lightning trainer
+  max_epochs: 10
+
+  # set True to to ensure deterministic results
+  # makes training slower but gives more reproducibility than just setting seeds
+  deterministic: True
+  

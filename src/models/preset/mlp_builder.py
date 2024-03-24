@@ -292,16 +292,45 @@ class MlpBuilder(nn.Module):
 if __name__ == "__main__":
     import os
     from pathlib import Path
-    from torch.utils.data import DataLoader
+    from torch.utils.data import DataLoader, Subset
 
     from data.datasets import SynthDatasetPkl
-    from models.preset.model_zoo import highway_ft, highway_ftgru
+    from models.preset.model_zoo import mlp_oh, highway_oh, highway_ft, highway_ftgru
 
     SYNTH = "diva"
     BATCH_SIZE = 32
 
-    # DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    DEVICE = "cpu"
+    MODEL = "highway_oh"
+    MODEL_SIZE = "b"
+
+    MODELS_CFG = {
+        "mlp_oh": {
+            "fn": mlp_oh,
+            "s": {"hidden_features": 1024},
+            "b": {"hidden_features": 2048},
+            "l": {"hidden_features": 3072},
+        },
+        "highway_oh": {
+            "fn": highway_oh,
+            "s": {"num_blocks": 4, "hidden_features": 512},
+            "b": {"num_blocks": 6, "hidden_features": 768},
+            "l": {"num_blocks": 8, "hidden_features": 1024},
+        },
+        "highway_ft": {
+            "fn": highway_ft,
+            "s": {"num_blocks": 4, "hidden_features": 256, "token_dim": 64},
+            "b": {"num_blocks": 6, "hidden_features": 512, "token_dim": 64},
+            "l": {"num_blocks": 8, "hidden_features": 768, "token_dim": 64},
+        },
+        "highway_ftgru": {
+            "fn": highway_ftgru,
+            "s": {"num_blocks": 4, "hidden_features": 512, "token_dim": 256},
+            "b": {"num_blocks": 6, "hidden_features": 768, "token_dim": 384},
+            "l": {"num_blocks": 8, "hidden_features": 1024, "token_dim": 512},
+        },
+    }
+
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
     DATASET_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "datasets"
 
@@ -364,33 +393,25 @@ if __name__ == "__main__":
     p_helper = PresetHelper(SYNTH, PARAMETERS_TO_EXCLUDE_STR)
 
     dataset = SynthDatasetPkl(DATASET_PATH)
-    loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
+    dataset = Subset(dataset, list(range(1024)))
 
-    model = highway_ft(
-        out_features=dataset.num_used_synth_parameters,
-        preset_helper=p_helper,
-        num_blocks=12,
-        hidden_features=768,
-        token_dim=128,
-    )
+    for name, cfg in MODELS_CFG.items():
+        print(f"\n{name}: {tuple(k for k in cfg['b'])}")
+        for size in ["s", "b", "l"]:
+            model = cfg["fn"](
+                out_features=dataset.dataset.num_used_synth_parameters,
+                preset_helper=p_helper,
+                **cfg[size],
+            )
+            model.to(DEVICE)
+            loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
+            for param, _ in loader:
+                out = model(param.to(DEVICE))
+            cfg_str = str(tuple(v for v in cfg[size].values()))
+            print(f"  Model {size.capitalize()}: {cfg_str:>14} -> {model.num_parameters:>8} parameters")
 
-    # model = highway_ftgru(
-    #     out_features=dataset.num_used_synth_parameters,
-    #     preset_helper=p_helper,
-    #     num_blocks=12,
-    #     hidden_features=1024,
-    #     token_dim=256,
-    #     gru_hidden_factor=4,
-    #     gru_num_layers=1,
-    # )
+    # model = model = highway_ftgru(out_features=192, preset_helper=p_helper, pre_norm=True)
+    # print(model)
+    # print(f"Model: {model.num_parameters} parameters")
 
-    model.to(DEVICE)
-    print(model)
-    print(f"Number of parameters: {model.num_parameters}")
-
-    # for presets, _ in loader:
-    #     out = model(presets.to(DEVICE))
-    #     break
-
-    # print(f"Output shape: {out.shape}")
     print("")

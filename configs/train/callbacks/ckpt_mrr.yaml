@@ -5,7 +5,7 @@
 ckpt_val:
   _target_: lightning.pytorch.callbacks.ModelCheckpoint
   dirpath: ${paths.output_dir}/checkpoints # directory to save the model file
-  filename: ${m_preset.name}_${train_dataset.name}_e{epoch}_mrr{val/mrr:.4f}
+  filename: ${task_name}_e{epoch}_mrr{val/mrr:.4f}
   auto_insert_metric_name: False # when True, the checkpoints filenames will contain the metric name
   
   monitor: "val/mrr" # name of the logged metric which determines when model is improving

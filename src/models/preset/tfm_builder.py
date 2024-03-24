@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     from models.preset.model_zoo import tfm
 
-    SYNTH = "diva"
+    SYNTH = "talnm"
     BATCH_SIZE = 256
     OUT_FEATURES = 192
 
@@ -202,18 +202,19 @@ if __name__ == "__main__":
 
     print("[num_blocks, hidden_features, mlp_factor] -> number of parameters")
 
-    for i in [6]:  # num_blocks
+    for i in [2, 6]:  # num_blocks
         for j in [256, 512]:  # embedding_dim
             for k in [4]:  # mlp_ratio
                 loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False)
                 model = tfm(OUT_FEATURES, p_helper, num_blocks=i, hidden_features=j, mlp_factor=k)
                 model.to(DEVICE)
-                start = timer()
+                # start = timer()
                 # for synth_params, _ in loader:
                 #     out = model(synth_params.to(DEVICE))
-                duration = timer() - start
+                # duration = timer() - start
                 num_params = sum(p.numel() for p in model.parameters())
-                print(f"[{i}, {j}, {k}]  -> {num_params:.3e} ({duration:.2f}s)")
+                # print(f"[{i}, {j}, {k}]  -> {num_params:.3e} ({duration:.2f}s)")
+                print(f"[{i}, {j}, {k}]  -> {num_params:>8}")
 
     # tfm = tfm_base(192, p_helper, num_blocks=2, embedding_dim=256, mlp_ratio=2)
     # tfm.to(DEVICE)

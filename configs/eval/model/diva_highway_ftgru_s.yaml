@@ -1,0 +1,21 @@
+# @package _global_
+
+defaults:
+  - override /synth: diva
+
+model: 
+  cfg: # 2_200_237 parameters
+    _target_: models.preset.highway_ftgru
+    hidden_features: 512
+    num_blocks: 4
+    block_kwargs: 
+      norm: BatchNorm1d
+      act_fn: ReLU
+      dropout_p: 0.0
+    embedding_kwargs:
+      token_dim: 256
+      pe_dropout_p: 0.0
+
+task_name: diva_highway_ftgru_s
+
+ckpt_path: ${paths.ckpt_dir}/diva_highway_ftgru_s_e9_mrr0.7302.ckpt

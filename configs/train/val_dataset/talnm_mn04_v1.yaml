@@ -8,8 +8,5 @@ loader:
   # 1 target amongst 512 candidates
   num_ranks: 256
   num_workers: 8
-  shuffle: False # always use the same targets
-  pin_memory: False
-  drop_last: True
-
+  
 name: talnm_mn04_val_v1

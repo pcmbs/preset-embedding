@@ -3,25 +3,20 @@
 defaults:
   - _self_
   - synth: talnm
-  - model: ??? 
+  - model: diva_highway_ft_b
   - hydra: default
-  - logger: null 
+  - wandb: default 
   - paths: default 
 
-# task name, determines output directory path
-task_name: eval
+# task name determines output directory path (overwritten in model cfg)
+task_name: ""
 
-# tags to help you identify your experiments
-# you can overwrite this in experiment configs
-# overwrite from command line with `python eval.py tags="[first_tag, second_tag]"`
 tags: 
-  - ${task_name}
   - ${synth.name}
-  - ${model.name}
+  - ${model.type}
+  - ${model.size}
 
-
-# ckpt_path to be set automatically by the model cfg
-ckpt_path: ${model.ckpt_path}
+ckpt_path: ${paths.ckpt_dir}/${model.ckpt_name}
 
 # seed for random number generators in pytorch, numpy and python.random
 seed: 42

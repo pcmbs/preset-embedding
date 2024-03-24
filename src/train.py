@@ -8,11 +8,13 @@ import os
 from typing import Any, Dict, List
 
 import hydra
+from hydra.core.hydra_config import HydraConfig
 import lightning as L
 from torch import nn
 from torch.utils.data import DataLoader
 from lightning import Callback, LightningModule, Trainer
 from lightning.pytorch.loggers import Logger
+from lightning.pytorch.plugins.environments import SLURMEnvironment
 from omegaconf import DictConfig
 import wandb
 
@@ -45,20 +47,19 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
     train_loader: DataLoader = DataLoader(
         dataset=train_dataset,
         batch_size=cfg.train_dataset.loader.batch_size,
+        shuffle=True,  # always shuffle the training dataset
         num_workers=cfg.train_dataset.loader.num_workers,
-        pin_memory=cfg.train_dataset.loader.pin_memory,
-        drop_last=cfg.train_dataset.loader.drop_last,
+        drop_last=False,
     )
 
     log.info(f"Instantiating validation Dataset: {cfg.val_dataset.path}")
     val_dataset = SynthDatasetPkl(cfg.val_dataset.path)
     val_loader = DataLoader(
-        val_dataset,
+        dataset=val_dataset,
         batch_size=cfg.val_dataset.loader.num_ranks,
+        shuffle=False,  # never shuffle the validation dataset
         num_workers=cfg.val_dataset.loader.num_workers,
-        shuffle=cfg.val_dataset.loader.shuffle,
-        pin_memory=cfg.val_dataset.loader.pin_memory,
-        drop_last=True,
+        drop_last=True,  # drop last required for MRR
     )
     check_val_dataset(train_dataset, val_dataset)
 
@@ -84,6 +85,9 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
     logger: List[Logger] = instantiate_loggers(cfg.get("logger"))
 
     log.info(f"Instantiating trainer <{cfg.trainer._target_}>")
+
+    if cfg.get("deactivate_slurm_lightning"):  # don't auto detect SLURM environment
+        SLURMEnvironment.detect = lambda: False
     trainer: Trainer = hydra.utils.instantiate(cfg.trainer, callbacks=callbacks, logger=logger)
 
     object_dict = {
@@ -98,14 +102,22 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
         log.info("Logging hyperparameters...")
         log_hyperparameters(object_dict)
 
-    if cfg.get("train"):
-        log.info("Starting training...")
-        trainer.fit(
-            model=model,
-            train_dataloaders=train_loader,
-            val_dataloaders=val_loader,
-            ckpt_path=cfg.get("ckpt_path"),
+    ckpt_path = cfg.get("ckpt_path")
+    if ckpt_path:
+        ckpt_info = (
+            f"last checkpoint at {HydraConfig.get().runtime.output_dir}"
+            if ckpt_path == "last"
+            else f"checkpoint at {ckpt_path}"
         )
+        log.info(f"Resuming training from {ckpt_info}...")
+    else:
+        log.info("Starting training...")
+    trainer.fit(
+        model=model,
+        train_dataloaders=train_loader,
+        val_dataloaders=val_loader,
+        ckpt_path=cfg.get("ckpt_path"),
+    )
 
     # get metrics available to callbacks. This includes metrics logged via log().
     metrics_dict = trainer.callback_metrics
