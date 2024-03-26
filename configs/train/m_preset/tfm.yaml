@@ -2,15 +2,13 @@ cfg:
   _target_: models.preset.tfm
   pe_type: absolute
   hidden_features: 256
-  num_blocks: 2
+  num_blocks: 6
   num_heads: 8
-  mlp_factor: 4
+  mlp_factor: 4.0
   pooling_type: cls
   last_activation: ReLU
-  tokenizer_kwargs:
-    pe_dropout_p: 0.0
-  block_kwargs: 
-    activation: relu
-    dropout: 0.0
+  pe_dropout_p: 0.0
+  block_activation: relu
+  block_dropout: 0.0
 
 name: tfm

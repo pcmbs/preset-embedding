@@ -13,8 +13,7 @@ m_preset: # 7_163_309 parameters
   cfg:
     num_blocks: 6
     hidden_features: 768
-    embedding_kwargs:
-      token_dim: 384
+    token_dim: 384
 
 solver:
   lr: 1.5e-3

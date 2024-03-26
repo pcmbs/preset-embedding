@@ -8,11 +8,16 @@ model:
     _target_: models.preset.highway_oh
     hidden_features: 512
     num_blocks: 4
-    block_kwargs: 
-      norm: BatchNorm1d
-      act_fn: ReLU
-      dropout_p: 0.0
+    block_norm: BatchNorm1d
+    block_act_fn: ReLU
+    block_dropout_p: 0.0
 
-task_name: talnm_highway_oh_s
+  type: highway_oh
+  size: s
+  val_mrr: 0.9723
+  epoch: 9
+  num_train_epochs: 9
 
-ckpt_path: ${paths.ckpt_dir}/talnm_highway_oh_s_e9_mrr0.9723.ckpt
+  ckpt_name: ${synth.name}_${model.type}_${model.size}_e${model.epoch}_mrr${model.val_mrr}.ckpt
+
+task_name: ${synth.name}_${model.type}_${model.size}

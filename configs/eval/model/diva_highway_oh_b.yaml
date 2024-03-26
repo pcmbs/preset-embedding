@@ -8,11 +8,16 @@ model:
     _target_: models.preset.highway_oh
     hidden_features: 768
     num_blocks: 6
-    block_kwargs: 
-      norm: BatchNorm1d
-      act_fn: ReLU
-      dropout_p: 0.0
+    block_norm: BatchNorm1d
+    block_act_fn: ReLU
+    block_dropout_p: 0.0
 
-task_name: diva_highway_oh_b
+  type: highway_oh
+  size: b
+  val_mrr: 0.7984
+  epoch: 9
+  num_train_epochs: 9
 
-ckpt_path: ${paths.ckpt_dir}/diva_highway_oh_b_e9_mrr0.7984.ckpt
+  ckpt_name: ${synth.name}_${model.type}_${model.size}_e${model.epoch}_mrr${model.val_mrr}.ckpt
+
+task_name: ${synth.name}_${model.type}_${model.size}

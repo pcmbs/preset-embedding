@@ -338,7 +338,7 @@ class PresetTokenizerWithGRU(nn.Module):
 
         self.gru = nn.GRU(
             input_size=token_dim,
-            hidden_size=gru_hidden_factor * token_dim // 2,  # // 2 since bi-GRU
+            hidden_size=int(gru_hidden_factor * token_dim // 2),  # // 2 since bi-GRU
             num_layers=gru_num_layers,
             bidirectional=True,
             batch_first=True,

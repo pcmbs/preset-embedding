@@ -1,20 +1,20 @@
 # @package _global_
 
 defaults:
-  - override /synth: diva
+  - override /synth: talnm
 
 model: 
   cfg: # 5_400_749 parameters
     _target_: models.preset.mlp_oh
-    hidden_features: 2048
+    hidden_features: 3072
     num_blocks: 1
     block_norm: BatchNorm1d
     block_act_fn: ReLU
     block_dropout_p: 0.0
 
   type: mlp_oh
-  size: b
-  val_mrr: 0.5478
+  size: l
+  val_mrr: 0.8845
   epoch: 9
   num_train_epochs: 9
 

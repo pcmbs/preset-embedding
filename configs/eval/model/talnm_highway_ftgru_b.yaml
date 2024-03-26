@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - override /synth: diva
+  - override /synth: talnm
 
 model: 
   cfg: # 7_163_309 parameters
@@ -16,10 +16,10 @@ model:
 
   type: highway_ftgru
   size: b
-  val_mrr: 0.7757
+  val_mrr: 0.9890
   epoch: 9
   num_train_epochs: 9
 
-  ckpt_name: ${synth.name}_${model.type}_${model.size}_e${model.epoch}_mrr${model.val_mrr}.ckpt
+  ckpt_name: ${synth.name}_${model.type}_${model.size}_e${model.epoch}_mrr0.9890.ckpt
 
 task_name: ${synth.name}_${model.type}_${model.size}

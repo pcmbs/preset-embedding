@@ -56,5 +56,5 @@ seed: 42
 ckpt_path: last # resume from beginning of the current epoch. Overwrite if necessary.
 run_id: null # pass a correct id to resume experiment
 
-# Disable Lightning's SLURMEnvironment plugin on HPC
+# Disable Lightning's SLURMEnvironment plugin on HPC by default, can be overwritten in experiments
 deactivate_slurm_lightning: True

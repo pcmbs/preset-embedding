@@ -32,7 +32,7 @@ def eval_logger(object_dict: Dict[str, Any]) -> None:
     hparams["seed"] = cfg.get("seed")
 
     # Data related hyperparameters
-    hparams["data/synth"] = cfg.get("synth")["name"]
+    hparams["data/synth"] = cfg["synth"]["name"]
     hparams["data/num_hc_presets"] = hc_results["num_hc_presets"]
     hparams["data/num_rnd_presets"] = rnd_results["num_rnd_presets"]
     hparams["data/excluded_params"] = dataset_cfg["params_to_exclude"]
@@ -45,10 +45,11 @@ def eval_logger(object_dict: Dict[str, Any]) -> None:
     hparams["data/embedding_dim"] = dataset_cfg["num_outputs"]
 
     # Model hyperparameters
-    hparams["model/type"] = cfg.get("model")["type"]
-    hparams["model/size"] = cfg.get("model")["size"]
+    hparams["model/type"] = cfg["model"]["type"]
+    hparams["model/size"] = cfg["model"]["size"]
     hparams["model/num_parameters"] = object_dict["model"].num_parameters
-    hparams["model/ckpt_name"] = cfg.get("model")["ckpt_name"]
+    hparams["model/ckpt_name"] = cfg["model"]["ckpt_name"]
+    hparams["num_train_epochs"] = cfg["model"]["num_train_epochs"]
 
     for k, v in cfg["model"]["cfg"].items():
         if k == "_target_":
@@ -60,8 +61,8 @@ def eval_logger(object_dict: Dict[str, Any]) -> None:
             hparams[f"model/{k}"] = v
 
     # Results from training
-    wandb.run.summary["val/mrr"] = cfg.get("model")["val_mrr"]
-    wandb.run.summary["val/epoch"] = cfg.get("model")["epoch"]
+    wandb.run.summary["val/mrr"] = cfg["model"]["val_mrr"]
+    wandb.run.summary["val/epoch"] = cfg["model"]["epoch"]
     # Results on hand-crafted presets
     wandb.run.summary["hc/mrr"] = hc_results["mrr"]
     wandb.run.summary["hc/loss"] = hc_results["loss"]

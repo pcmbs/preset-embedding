@@ -1,11 +1,8 @@
 # @package _global_
 
-# TODO: change min_lr to factor of base_lr from 0.001 to 1.0
-
 defaults:
   - _self_
   - synth: ???
-  - search_space: ???
   - m_preset: ???
   - sampler: qmc_tpe
   - pruner: nop
@@ -20,12 +17,6 @@ tag: ???
 
 # seed for the RNGs
 seed: 42
-
-# Can be used to limit the number of samples in the dataset
-# This can be useful for bigger/slower models since HPO can take a while
-# -> 1 corresponds to the whole dataset while 0.5 corresponds to half of the dataset
-train_dataset_size_factor: 1
-val_dataset_size_factor: 1
 
 ############ Optuna configs
 # number of trials to run
@@ -66,6 +57,7 @@ lr_scheduler:
   _partial_: true
   linear_start_factor: 1
   linear_end_factor: 1
+  milestone: 1450
 
 ############ Artifacts
 # name of the optuna study

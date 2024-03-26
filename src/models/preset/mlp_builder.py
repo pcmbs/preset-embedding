@@ -7,15 +7,6 @@ from typing import Dict, Optional
 import torch
 from torch import nn
 
-from models.preset.embedding_layers import (
-    RawParameters,
-    OneHotEncoding,
-    PresetTokenizer,
-    PositionalEncoding,
-    PresetTokenizerWithGRU,
-)
-from utils.synth import PresetHelper
-
 #################### BUILDING BLOCKS ####################
 
 
@@ -250,7 +241,7 @@ class MlpBuilder(nn.Module):
         super().__init__()
 
         self.embedding_layer = embedding_layer(**embedding_kwargs)
-        self.in_features = self.embedding_layer.embedding_dim * self.embedding_layer.out_length
+        self.in_features = int(self.embedding_layer.embedding_dim * self.embedding_layer.out_length)
 
         self.blocks = nn.Sequential(
             *[
@@ -296,11 +287,12 @@ if __name__ == "__main__":
 
     from data.datasets import SynthDatasetPkl
     from models.preset.model_zoo import mlp_oh, highway_oh, highway_ft, highway_ftgru
+    from utils.synth import PresetHelper
 
     SYNTH = "diva"
     BATCH_SIZE = 32
 
-    MODEL = "highway_oh"
+    MODEL = "highway_ftgru"
     MODEL_SIZE = "b"
 
     MODELS_CFG = {
@@ -399,7 +391,7 @@ if __name__ == "__main__":
         print(f"\n{name}: {tuple(k for k in cfg['b'])}")
         for size in ["s", "b", "l"]:
             model = cfg["fn"](
-                out_features=dataset.dataset.num_used_synth_parameters,
+                out_features=dataset.dataset.embedding_dim,
                 preset_helper=p_helper,
                 **cfg[size],
             )
@@ -410,8 +402,12 @@ if __name__ == "__main__":
             cfg_str = str(tuple(v for v in cfg[size].values()))
             print(f"  Model {size.capitalize()}: {cfg_str:>14} -> {model.num_parameters:>8} parameters")
 
-    # model = model = highway_ftgru(out_features=192, preset_helper=p_helper, pre_norm=True)
-    # print(model)
-    # print(f"Model: {model.num_parameters} parameters")
+    model = MODELS_CFG[MODEL]["fn"](
+        out_features=dataset.dataset.embedding_dim,
+        preset_helper=p_helper,
+        **MODELS_CFG[MODEL][MODEL_SIZE],
+    )
+    print(model)
+    print(f"Model: {model.num_parameters} parameters")
 
     print("")

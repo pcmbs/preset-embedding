@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     from models.preset.model_zoo import tfm
 
-    SYNTH = "talnm"
+    SYNTH = "diva"
     BATCH_SIZE = 256
     OUT_FEATURES = 192
 

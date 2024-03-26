@@ -36,6 +36,7 @@ import wandb
 
 from data.datasets import SynthDatasetPkl
 from hpo.lit_module import PresetEmbeddingHPO
+from hpo import get_model
 from utils.logging import RankedLogger
 from utils.synth import PresetHelper
 
@@ -76,37 +77,20 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
 
     # instantiate train Dataset & DataLoader
     train_dataset = SynthDatasetPkl(cfg.path_to_train_dataset)
-    if cfg.train_dataset_size_factor != 1:
-        train_loader = DataLoader(
-            Subset(train_dataset, list(range(int(len(train_dataset) * cfg.train_dataset_size_factor)))),
-            batch_size=cfg.batch_size,
-            shuffle=True,
-            num_workers=cfg.num_workers,
-        )
-    else:
-        train_loader = DataLoader(
-            train_dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers
-        )
+    train_loader = DataLoader(
+        train_dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers
+    )
 
     # instantiate validation Dataset & DataLoader
     # Drop last must be true for MRR
     val_dataset = SynthDatasetPkl(cfg.path_to_val_dataset)
-    if cfg.val_dataset_size_factor != 1:
-        val_loader = DataLoader(
-            Subset(train_dataset, list(range(int(len(train_dataset) * cfg.val_dataset_size_factor)))),
-            batch_size=cfg.num_ranks_mrr,
-            num_workers=cfg.num_workers,
-            shuffle=False,
-            drop_last=True,
-        )
-    else:
-        val_loader = DataLoader(
-            val_dataset,
-            batch_size=cfg.num_ranks_mrr,
-            num_workers=cfg.num_workers,
-            shuffle=False,
-            drop_last=True,
-        )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=cfg.num_ranks_mrr,
+        num_workers=cfg.num_workers,
+        shuffle=False,
+        drop_last=True,
+    )
 
     # instantiate PresetHelper
     preset_helper = PresetHelper(
@@ -115,53 +99,12 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
     )
 
     # instantiate preset encoder
-    model_type = cfg.m_preset.name.split("_")[0]
-    if cfg.m_preset.name in ["highway_ftgru", "highway_ft"]:
-        preset_encoder: nn.Module = hydra.utils.instantiate(
-            cfg.m_preset.cfg,
-            out_features=train_dataset.embedding_dim,
-            preset_helper=preset_helper,
-            token_dim=hps["token_dim"],
-            num_blocks=hps["num_blocks"],
-            hidden_features=hps["hidden_features"],
-        )
-    elif cfg.m_preset.name == "highway_ft":
-        preset_encoder: nn.Module = hydra.utils.instantiate(
-            cfg.m_preset.cfg,
-            out_features=train_dataset.embedding_dim,
-            preset_helper=preset_helper,
-            token_dim=hps["token_dim"],
-            num_blocks=hps["num_blocks"],
-            hidden_features=hps["hidden_features"],
-        )
-    elif model_type in ["mlp", "resnet", "highway"]:
-        preset_encoder: nn.Module = hydra.utils.instantiate(
-            cfg.m_preset.cfg,
-            out_features=train_dataset.embedding_dim,
-            preset_helper=preset_helper,
-            num_blocks=hps["num_blocks"],
-            hidden_features=hps["hidden_features"],
-        )
-    elif model_type == "gru":
-        preset_encoder: nn.Module = hydra.utils.instantiate(
-            cfg.m_preset.cfg,
-            out_features=train_dataset.embedding_dim,
-            preset_helper=preset_helper,
-            num_layers=hps["num_layers"],
-            hidden_features=hps["hidden_features"],
-        )
-    elif model_type == "tfm":
-        preset_encoder: nn.Module = hydra.utils.instantiate(
-            cfg.m_preset.cfg,
-            out_features=train_dataset.embedding_dim,
-            preset_helper=preset_helper,
-            hidden_features=hps["hidden_features"],
-            num_blocks=hps["num_blocks"],
-            num_heads=hps["num_heads"],
-            mlp_factor=hps["mlp_factor"],
-        )
-    else:
-        raise NotImplementedError(f"preset encoder {cfg.m_preset.name} not implemented!")
+    preset_encoder: nn.Module = getattr(get_model, "get_" + cfg.m_preset.name)(
+        out_features=train_dataset.embedding_dim,
+        preset_helper=preset_helper,
+        model_cfg=cfg.m_preset.cfg,
+        hps=hps,
+    )
 
     # instantiate optimizer, lr_scheduler, and scheduler_config
     beta1 = hps.get("beta1", 0.9)
@@ -173,8 +116,8 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
         hydra.utils.instantiate(
             cfg.lr_scheduler,
             total_steps=np.ceil(len(train_dataset) / cfg.batch_size),
-            milestone=hps["milestone"],
-            final_lr=hps["min_lr"],
+            milestone=hps.get("milestone") or cfg.lr_scheduler.get("milestone"),
+            final_lr=hps.get("min_lr_factor") * hps["base_lr"],
         )
         if cfg.get("lr_scheduler")
         else None
@@ -221,9 +164,7 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, is_startup: bool) -> f
     # set user attributes
     trial.set_user_attr("seed", cfg.seed)
     trial.set_user_attr("dataset/train", train_dataset.path_to_dataset.stem)
-    trial.set_user_attr("dataset/train_size_factor", cfg.train_dataset_size_factor)
     trial.set_user_attr("dataset/val", val_dataset.path_to_dataset.stem)
-    trial.set_user_attr("dataset/val_size_factor", cfg.val_dataset_size_factor)
     trial.set_user_attr("m_preset/num_params", preset_encoder.num_parameters)
     trial.set_user_attr("m_preset/name", cfg.m_preset.name)
     trial.set_user_attr(
@@ -300,13 +241,6 @@ def hpo(cfg: DictConfig) -> None:
     register_signal_handler_with_args(signal.SIGUSR1, sigstp_handler, study)  # for HPC
     register_signal_handler_with_args(signal.SIGTERM, sigstp_handler, study)  # for HPC
 
-    if cfg.train_dataset_size_factor != 1:
-        log.info(
-            f"Warning: Only {cfg.train_dataset_size_factor} of the train dataset will be used for training"
-        )
-    if cfg.val_dataset_size_factor != 1:
-        log.info(f"Warning: Only {cfg.val_dataset_size_factor} of the val dataset will be used for training")
-
     # Start startup trials if needed
     num_startup_trials = cfg.sampler.get("n_startup_trials", 0)
 
@@ -357,12 +291,17 @@ def hpo(cfg: DictConfig) -> None:
 if __name__ == "__main__":
     # import sys
 
-    # args = ["src/hpo/run.py"]
-
-    # sys.argv = args
+    # args = [
+    #     "src/hpo/run.py",
+    #     "m_preset=mlp_oh_b_opt",
+    #     "synth=dexed",
+    #     "tag=test",
+    #     "num_trials=100",
+    #     "sampler.n_startup_trials=64",
+    # ]
 
     # gettrace = getattr(sys, "gettrace", None)
     # if gettrace():
-    #   sys.argv = args
+    #     sys.argv = args
 
     hpo()  # pylint: disable=no-value-for-parameter
