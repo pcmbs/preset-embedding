@@ -9,6 +9,6 @@ cfg:
   last_activation: ReLU
   pe_dropout_p: 0.0
   block_activation: relu
-  block_dropout: 0.0
+  block_dropout_p: 0.0
 
 name: tfm

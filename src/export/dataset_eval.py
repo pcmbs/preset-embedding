@@ -99,7 +99,15 @@ def generate_eval_dataset(
     audio_fe.to(DEVICE)
     audio_fe.eval()
 
-    dataset = RenderPreset(presets=presets, preset_helper=preset_helper, renderer=processor.renderer)
+    dataset = RenderPreset(
+        presets=presets,
+        preset_helper=preset_helper,
+        render_duration_in_sec=train_cfg["render_duration_in_sec"],
+        midi_note=train_cfg["midi_note"],
+        midi_velocity=train_cfg["midi_velocity"],
+        midi_duration_in_sec=train_cfg["midi_duration_in_sec"],
+        rms_range=(0.01, 1.0),
+    )
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
     audio_embeddings = torch.empty((len(presets), audio_fe.out_features), device="cpu")
@@ -158,7 +166,7 @@ def generate_eval_dataset(
 
 if __name__ == "__main__":
 
-    SYNTH = "diva"
+    SYNTH = "dexed"
     VERSION = 1
 
     # path to the dataset used for training and to the json dataset

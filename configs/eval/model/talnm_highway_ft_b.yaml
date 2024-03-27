@@ -4,7 +4,7 @@ defaults:
   - override /synth: talnm
 
 model:
-  cfg: # 4_600_315 parameters
+  cfg: 
     _target_: models.preset.highway_ft
     hidden_features: 512
     num_blocks: 6

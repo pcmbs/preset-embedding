@@ -4,7 +4,7 @@ defaults:
   - override /synth: diva
 
 model: 
-  cfg: # 6_360_749 parameters
+  cfg: 
     _target_: models.preset.highway_oh
     hidden_features: 768
     num_blocks: 6

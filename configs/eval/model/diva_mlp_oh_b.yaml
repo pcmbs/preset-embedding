@@ -4,7 +4,7 @@ defaults:
   - override /synth: diva
 
 model: 
-  cfg: # 5_400_749 parameters
+  cfg: 
     _target_: models.preset.mlp_oh
     hidden_features: 2048
     num_blocks: 1

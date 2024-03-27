@@ -56,6 +56,6 @@ search_space:
     type: float
     kwargs:
       name: eps
-      low: 0.0000000001
-      high: 0.0001
+      low: 1e-10
+      high: 1e-4
     log: true
