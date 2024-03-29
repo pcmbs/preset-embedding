@@ -3,31 +3,34 @@
 defaults:
   - override /train_dataset: diva_mn04_v1
   - override /val_dataset: diva_mn04_v1
-  - override /m_preset: highway_ft
+  - override /m_preset: tfm
 
-task_name: diva_highway_ft_s
+task_name: diva_tfm_s
 
 ########## hyperparameters 
 
-m_preset: # 3_301_293 parameters
+m_preset: # 1_735_104 parameters
   cfg:
-    num_blocks: 4
+    num_blocks: 2
     hidden_features: 256
-    token_dim: 64
+    num_heads: 8
+    mlp_factor: 4
+    pooling_type: cls
 
 solver:
-  lr: 4e-3
-
+  lr: 1e-3
   optimizer:
     betas:
-      - 0.930
+      - 0.890
       - 0.987
-    eps: 2e-7
+    eps: 5e-10
 
   scheduler:
-    total_steps: 200_000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
-    milestone: 7500
-    final_lr: 2e-6
+    min_lr: 2e-6
+    num_warmup_steps: 7500
+    warmup_factor: 1.0
+    num_decay_steps: 192_500 # warmup+cosine corresponds to 10 epochs at bs=512
+    num_restart_steps: null
 
 ########## training setup
 train_dataset:
@@ -37,7 +40,7 @@ train_dataset:
 trainer:
   # kwargs for lightning trainer
   max_epochs: 10
-
+  
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True

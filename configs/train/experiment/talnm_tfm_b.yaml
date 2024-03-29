@@ -26,9 +26,11 @@ solver:
     eps: 5e-10
 
   scheduler:
-    total_steps: 400_000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
-    milestone: 7500
-    final_lr: 2e-6
+    min_lr: 2e-6
+    num_warmup_steps: 7500
+    warmup_factor: 1.0
+    num_decay_steps: 392_500 # warmup+cosine corresponds to 10 epochs at bs=512
+    num_restart_steps: null
 
 ########## training setup
 train_dataset:

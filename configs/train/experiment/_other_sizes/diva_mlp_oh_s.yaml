@@ -1,29 +1,29 @@
 # @package _global_
 
 defaults:
-  - override /train_dataset: dexed_mn04_v1
-  - override /val_dataset: dexed_mn04_v1
+  - override /train_dataset: diva_mn04_v1
+  - override /val_dataset: diva_mn04_v1
   - override /m_preset: mlp_oh
 
-task_name: dexed_mlp_oh_b
+task_name: diva_mlp_oh_s
 
 ########## hyperparameters 
 
-m_preset:
+m_preset: # 1_651_885 parameters
   cfg:
     num_blocks: 1
-    hidden_features: 2048
+    hidden_features: 1024
 
 solver:
-  lr: 1.2e-2
+  lr: 1.4e-2
   optimizer:
     betas:
       - 0.780
       - 0.998
-    eps: 8e-6
+    eps: 2e-8
 
   scheduler:
-    min_lr: 2e-6 # factor 1.66e-4 
+    min_lr: 2e-6
     num_warmup_steps: 7500
     warmup_factor: 1.0
     num_decay_steps: 192_500 # warmup+cosine corresponds to 10 epochs at bs=512

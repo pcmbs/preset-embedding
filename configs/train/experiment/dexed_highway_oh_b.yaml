@@ -1,11 +1,11 @@
 # @package _global_
 
 defaults:
-  - override /train_dataset: diva_mn04_v1
-  - override /val_dataset: diva_mn04_v1
+  - override /train_dataset: dexed_mn04_v1
+  - override /val_dataset: dexed_mn04_v1
   - override /m_preset: highway_oh
 
-task_name: diva_highway_oh_b
+task_name: dexed_highway_oh_b
 
 ########## hyperparameters 
 
@@ -23,9 +23,11 @@ solver:
     eps: 2e-7
 
   scheduler:
-    total_steps: 200_000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
-    milestone: 7500
-    final_lr: 2e-6 # factor 5e-4
+    min_lr: 2e-6 # factor 5e-4
+    num_warmup_steps: 7500
+    warmup_factor: 1.0
+    num_decay_steps: 192_500 # warmup+cosine corresponds to 10 epochs at bs=512
+    num_restart_steps: null
 
 ########## training setup
 train_dataset:

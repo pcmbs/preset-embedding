@@ -11,7 +11,7 @@ m_preset:
     pooling_type: cls
     last_activation: ReLU
     block_activation: relu
-    block_dropout: 0.0
+    block_dropout_p: 0.0
     pe_dropout_p: 0.0
 
   name: tfm
@@ -38,7 +38,7 @@ search_space:
     kwargs:
       name: base_lr
       low: 1e-5
-      high: 6e-3
+      high: 8e-3
       log: true
 
   # final lr factor for scheduler 

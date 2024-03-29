@@ -18,10 +18,11 @@ lr: 1e-3
 
 # LR scheduler
 scheduler:
-  _target_: utils.lr_schedulers.lin_cos_scheduler_builder
-  _partial_: true
-  # total_steps: # should be (num_epochs * num_training_examples) / batch_size
-  milestone: 1450
-  final_lr: 1e-7
-  linear_start_factor: 1
-  linear_end_factor: 1
+    _target_: utils.lr_schedulers.wcrc_scheduler_builder
+    _partial_: true
+    min_lr: 2e-6
+    num_warmup_steps: 7500
+    warmup_factor: 1.0
+    num_decay_steps: 192_500 # warmup+cosine corresponds to 10 epochs at bs=512
+    # num_restart_steps: 2000
+    restart_factor: 0.5

@@ -44,6 +44,8 @@ class PresetEmbeddingLitModule(LightningModule):
         self.mrr_preds = []
         self.mrr_targets = None
 
+        # self.save_hyperparameters("optimizer", "lr", "scheduler")
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.preset_encoder(x)
 

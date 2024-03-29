@@ -3,32 +3,32 @@
 defaults:
   - override /train_dataset: talnm_mn04_v1
   - override /val_dataset: talnm_mn04_v1
-  - override /m_preset: highway_ft
+  - override /m_preset: mlp_oh
 
-task_name: talnm_highway_ft_l
+task_name: talnm_mlp_oh_l
 
 ########## hyperparameters 
 
-m_preset: # 11_227_131 parameters
+m_preset: # 9_947_195 parameters
   cfg:
-    num_blocks: 8
-    hidden_features: 768
-    token_dim: 64
+    num_blocks: 1
+    hidden_features: 3072
 
 solver:
-  lr: 1e-2
-  
+  lr: 1.4e-2
   optimizer:
     betas:
-      - 0.800
-      - 0.948
-    eps: 2e-7
+      - 0.910
+      - 0.980
+    eps: 2e-8
 
   scheduler:
-    total_steps: 200_000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
-    milestone: 7500
-    final_lr: 2e-6
-
+    min_lr: 2e-6
+    num_warmup_steps: 7500
+    warmup_factor: 1.0
+    num_decay_steps: 192_500 # warmup+cosine corresponds to 10 epochs at bs=512
+    num_restart_steps: null
+    
 ########## training setup
 train_dataset:
   loader:
@@ -37,8 +37,9 @@ train_dataset:
 trainer:
   # kwargs for lightning trainer
   max_epochs: 10
-
+  
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
+  
   

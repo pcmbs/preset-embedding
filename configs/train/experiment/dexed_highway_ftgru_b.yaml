@@ -1,33 +1,35 @@
 # @package _global_
 
 defaults:
-  - override /train_dataset: diva_mn04_v1
-  - override /val_dataset: diva_mn04_v1
+  - override /train_dataset: dexed_mn04_v1
+  - override /val_dataset: dexed_mn04_v1
   - override /m_preset: highway_ftgru
 
-task_name: diva_highway_ftgru_l
+task_name: dexed_highway_ftgru_b
 
 ########## hyperparameters 
 
-m_preset: # 16_798_893 parameters
+m_preset:
   cfg:
-    num_blocks: 8
-    hidden_features: 1024
-    token_dim: 512
+    num_blocks: 6
+    hidden_features: 768
+    token_dim: 384
 
 solver:
   lr: 1.5e-3
   
   optimizer:
     betas:
-      - 0.930
-      - 0.987
-    eps: 2e-8
+      - 0.775
+      - 0.978
+    eps: 3e-7
 
   scheduler:
-    total_steps: 200_000 # not an HP, must be (num_epochs * num_training_examples) / batch_size
-    milestone: 7500
-    final_lr: 2e-6
+    min_lr: 2e-6 # factor: 1.33e-3
+    num_warmup_steps: 7500
+    warmup_factor: 1.0
+    num_decay_steps: 192_500 # warmup+cosine corresponds to 10 epochs at bs=512
+    num_restart_steps: null
 
 ########## training setup
 train_dataset:
@@ -41,4 +43,3 @@ trainer:
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
-  

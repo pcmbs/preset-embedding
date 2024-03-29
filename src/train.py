@@ -104,19 +104,14 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
 
     ckpt_path = cfg.get("ckpt_path")
     if ckpt_path:
-        ckpt_info = (
-            f"last checkpoint at {HydraConfig.get().runtime.output_dir}"
-            if ckpt_path == "last"
-            else f"checkpoint at {ckpt_path}"
-        )
-        log.info(f"Resuming training from {ckpt_info}...")
+        log.info(f"Resuming training from {ckpt_path}...")
     else:
         log.info("Starting training...")
     trainer.fit(
         model=model,
         train_dataloaders=train_loader,
         val_dataloaders=val_loader,
-        ckpt_path=cfg.get("ckpt_path"),
+        ckpt_path=ckpt_path,
     )
 
     # get metrics available to callbacks. This includes metrics logged via log().
@@ -147,4 +142,11 @@ def main(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
+    # import sys
+
+    # args = ["src/train.py", "experiment=_change_hps_res_1"]  # , "logger=none"]
+
+    # gettrace = getattr(sys, "gettrace", None)
+    # if gettrace():
+    #     sys.argv = args
     main()  # pylint: disable=no-value-for-parameter

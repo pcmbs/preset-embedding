@@ -1,29 +1,31 @@
 # @package _global_
 
 defaults:
-  - override /train_dataset: dexed_mn04_v1
-  - override /val_dataset: dexed_mn04_v1
-  - override /m_preset: mlp_oh
+  - override /train_dataset: diva_mn04_v1
+  - override /val_dataset: diva_mn04_v1
+  - override /m_preset: highway_ft
 
-task_name: dexed_mlp_oh_b
+task_name: diva_highway_ft_s
 
 ########## hyperparameters 
 
-m_preset:
+m_preset: # 3_301_293 parameters
   cfg:
-    num_blocks: 1
-    hidden_features: 2048
+    num_blocks: 4
+    hidden_features: 256
+    token_dim: 64
 
 solver:
-  lr: 1.2e-2
+  lr: 4e-3
+
   optimizer:
     betas:
-      - 0.780
-      - 0.998
-    eps: 8e-6
+      - 0.930
+      - 0.987
+    eps: 2e-7
 
   scheduler:
-    min_lr: 2e-6 # factor 1.66e-4 
+    min_lr: 2e-6
     num_warmup_steps: 7500
     warmup_factor: 1.0
     num_decay_steps: 192_500 # warmup+cosine corresponds to 10 epochs at bs=512
@@ -37,8 +39,7 @@ train_dataset:
 trainer:
   # kwargs for lightning trainer
   max_epochs: 10
-  
+
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
-  

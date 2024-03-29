@@ -171,5 +171,5 @@ def get_tfm(
         last_activation=model_cfg.get("last_activation") or hps.get("last_activation"),
         pe_dropout_p=model_cfg.get("pe_dropout_p") or hps.get("pe_dropout_p") or 0.0,
         block_activation=model_cfg.get("block_activation") or hps.get("block_activation"),
-        block_dropout=model_cfg.get("block_dropout") or hps.get("block_dropout") or 0.0,
+        block_dropout_p=model_cfg.get("block_dropout_p") or hps.get("block_dropout_p") or 0.0,
     )

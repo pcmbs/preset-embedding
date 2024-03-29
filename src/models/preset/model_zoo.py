@@ -1,4 +1,3 @@
-from typing import Optional
 from torch import nn
 
 from models.preset.embedding_layers import (
@@ -29,7 +28,7 @@ def mlp_raw(
     block_dropout_p: float = 0.0,
 ) -> nn.Module:
     """
-    MLP with BatchNorm+ReLU blocks and and raw parameter values in range [0,1].
+    MLP with BatchNorm+ReLU blocks (by default) and raw parameter values in range [0,1].
     """
     return MlpBuilder(
         out_features=out_features,
