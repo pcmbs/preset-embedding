@@ -92,6 +92,18 @@ class PresetEmbeddingLitModule(LightningModule):
         self.mrr_preds.append(preset_embedding)
 
     def on_validation_epoch_end(self) -> None:
+        # skip following if len(self.mrr_preds) == 1 since no ranking can be done, i.e.,
+        # there is only a single prediction per ranking evaluation.
+        # This can happen if the model is loaded from a checkpoint with
+        # save_on_train_epoch_end=False (e.g., when monitoring a validation metric).
+        if len(self.mrr_preds) <= 1:
+            log.info("Number of predictions per ranking evaluation is less than 2. Skipping MRR evaluation.")
+            # logging dummy value to avoid Lightning MisconfigurationException...
+            # Note that this will overwrite the last logged value if resuming the same wandb run.
+            # Hence a new wandb run should be created instead.
+            self.log("val/mrr", -1, prog_bar=True, on_step=False, on_epoch=True)
+            return
+
         num_eval, preds_dim = self.mrr_targets.shape
         # unsqueeze for torch.cdist (one target per eval) -> shape: (num_eval, 1, dim)
         targets = self.mrr_targets.unsqueeze_(1)

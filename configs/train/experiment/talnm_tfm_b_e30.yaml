@@ -1,15 +1,15 @@
 # @package _global_
 
 defaults:
-  - override /train_dataset: dexed_mn04_v1
-  - override /val_dataset: dexed_mn04_v1
+  - override /train_dataset: talnm_mn04_v1
+  - override /val_dataset: talnm_mn04_v1
   - override /m_preset: tfm
 
-task_name: dexed_tfm_b
+task_name: talnm_tfm_b_re20
 
 ########## hyperparameters 
 
-m_preset: # 4_894_144 parameters
+m_preset: # 4_815_040 parameters
   cfg:
     num_blocks: 6
     hidden_features: 256
@@ -21,15 +21,15 @@ solver:
   lr: 1e-3
   optimizer:
     betas:
-      - 0.910 # 0.890
+      - 0.890
       - 0.987
-    eps: 2e-8 # 5e-10
+    eps: 5e-10
 
   scheduler:
     min_lr: 2e-6
     num_warmup_steps: 7500
     warmup_factor: 1.0
-    num_decay_steps: 392_500 # warmup+cosine corresponds to 10 epochs at bs=256
+    num_decay_steps: 392_500 # warmup+cosine corresponds to 10 epochs at bs=512
     num_restart_steps: 800_000 # 20 epochs
     restart_factor: 1.0 # full restart
 
@@ -45,3 +45,5 @@ trainer:
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
+
+ckpt_path: ${paths.ckpt_dir}/restart/talnm_tfm_b_re20.ckpt

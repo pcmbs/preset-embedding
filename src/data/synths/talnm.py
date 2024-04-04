@@ -2,9 +2,6 @@ from utils.synth import SynthParameter
 
 # TODO: add motivation for category weights, modified interval, and excluded params
 
-# TODO: should have made "transpose" a num with cardinality=4 and cat_values=(0.0, 0.5, 0.75, 1.0)
-# instead of cat but was not implemented at this point, same goes for "envelop_speed"... maybe do that later
-
 SYNTH_NAME = "talnm"
 
 SYNTH_PARAMETERS = (

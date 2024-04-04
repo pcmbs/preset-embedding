@@ -10,7 +10,7 @@ from utils.synth import PresetHelper
 
 NUM_SAMPLES = 32
 
-# TODO: export test datasets + SynthDatasetPkl instead of SynthDataset when Dexed dataset exported
+# TODO: SynthDatasetPkl instead of SynthDataset
 
 
 @pytest.fixture
@@ -98,7 +98,6 @@ def test_raw_params_emb_layer_talnm(talnm_dataset):
     params, _, _ = next(iter(loader))
 
     raw_params_emb = emb_layer(params.clone())
-    # TODO: refactor that since fn doesnt exist anymore
     for (cat_values, _), indices in talnm_dataset.preset_helper.grouped_used_parameters["discrete"][
         "cat"
     ].items():

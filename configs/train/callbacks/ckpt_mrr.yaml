@@ -2,6 +2,10 @@
 
 # keep k-top on validation (MMR)
 
+# Note that this checkpoint should not be used to resume training if the 
+# due to the save_on_train_epoch_end=False
+# (use)
+
 ckpt_val:
   _target_: lightning.pytorch.callbacks.ModelCheckpoint
   dirpath: ${paths.output_dir}/checkpoints # directory to save the model file
@@ -15,4 +19,5 @@ ckpt_val:
   save_top_k: 1 # save k best models (determined by above metric)
 
   every_n_epochs: 1 # number of epochs between checkpoints
-  save_on_train_epoch_end: False # run checkpointing at the end of the validation epoch (can be several times per training epoch)
+  # run checkpointing at the end of the validation epoch (can be several times per training epoch)
+  save_on_train_epoch_end: False 

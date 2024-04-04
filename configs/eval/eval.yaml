@@ -2,11 +2,18 @@
 
 defaults:
   - _self_
-  - synth: talnm
-  - model: diva_highway_ft_b
+  - synth: ???
+  - model: ???
   - hydra: default
   - wandb: default 
   - paths: default 
+
+# Subset size for the handcrafted preset dataset used for evaluation.
+# This should allow for fairer comparison between synthesizer, since a 
+# higher of presets make a given MRR value harder to achieve.
+# Passing -1, 0, or a number larger than the size of the dataset 
+# will result in using the full dataset.
+subset_size: -1
 
 # task name determines output directory path (overwritten in model cfg)
 task_name: ""
@@ -14,9 +21,11 @@ task_name: ""
 tags: 
   - ${synth.name}
   - ${model.type}
-  - ${model.size}
 
-ckpt_path: ${paths.ckpt_dir}/${model.ckpt_name}
+ckpt_path: ${paths.ckpt_dir}/final/${model.ckpt_name}
 
 # seed for random number generators in pytorch, numpy and python.random
 seed: 42
+
+# device on which to run the evaluation
+device: cuda

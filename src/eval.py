@@ -16,20 +16,13 @@ import hydra
 from hydra.core.hydra_config import HydraConfig
 import lightning as L
 from torch import nn
-from torch.utils.data import Subset
 from omegaconf import DictConfig
 import torch
 import wandb
 
 from data.datasets import SynthDatasetPkl
 from models.lit_module import PresetEmbeddingLitModule
-from utils.evaluation import (
-    hc_eval_mrr,
-    compute_l1,
-    rnd_presets_eval,
-    eval_logger,
-    get_non_repeating_integers,
-)
+from utils.evaluation import one_vs_all_eval, non_overlapping_eval, eval_logger
 from utils.logging import RankedLogger
 from utils.synth.preset_helper import PresetHelper
 
@@ -48,9 +41,10 @@ def evaluate(cfg: DictConfig) -> None:
     Return
     TODO
     """
-    if cfg.get("seed"):
-        L.seed_everything(cfg.seed)
+    device = "cuda" if torch.cuda.is_available() and cfg.device == "cuda" else "cpu"
+    L.seed_everything(cfg.seed)
 
+    ##### Initializing datasets, models, and logger
     log.info(f"Instantiating hand-crafted presets Dataset: {cfg.synth.dataset_path}")
     hc_dataset = SynthDatasetPkl(cfg.synth.dataset_path)
 
@@ -72,42 +66,42 @@ def evaluate(cfg: DictConfig) -> None:
     )
 
     if cfg.get("wandb"):
-        log.info("Instantiating wandb logger")
-        logger = wandb.init(**cfg.wandb)
+        log.info("Instantiating wandb logger...")
+        run = wandb.init(**cfg.wandb)
 
     log.info(f"Loading checkpoint from {cfg.ckpt_path}...")
     model = PresetEmbeddingLitModule.load_from_checkpoint(cfg.ckpt_path, preset_encoder=m_preset)
+    model.to(device)
     model.freeze()
 
-    log.info("Computing evaluation metrics on the hand-crafted presets dataset...")
-    hc_mrr, hc_top_k_mrr, hc_ranks_dict = hc_eval_mrr(model=model, dataset=hc_dataset)
-    hc_loss = compute_l1(model=model, dataset=hc_dataset)
-
+    ##### Computing Evaluation Metrics
+    num_hc_presets = cfg.subset_size if 0 < cfg.subset_size < len(hc_dataset) else len(hc_dataset)
+    log.info(f"Computing evaluation metrics on {num_hc_presets} hand-crafted presets (one-vs-all)...")
+    hc_mrr, hc_top_k_mrr, hc_ranks_dict, hc_loss = one_vs_all_eval(
+        model=model, dataset=hc_dataset, subset_size=cfg.subset_size, device=device
+    )
     hc_results = {
         "mrr": hc_mrr,
         "top_k_mrr": hc_top_k_mrr,
         "ranks": hc_ranks_dict,
         "loss": hc_loss,
-        "num_hc_presets": len(hc_dataset),
+        "num_hc_presets": num_hc_presets,
     }
 
-    log.info("Computing evaluation metrics on the same number of random presets...")
-    subset_idx = get_non_repeating_integers(N=len(rnd_dataset), K=len(hc_dataset))
-    rnd_sub_dataset = Subset(rnd_dataset, subset_idx)
-    rnd_sub_mrr, rnd_sub_top_k_mrr, _ = hc_eval_mrr(model=model, dataset=rnd_sub_dataset)
-    rnd_sub_loss = compute_l1(model=model, dataset=rnd_sub_dataset)
-
+    log.info(f"Computing evaluation metrics on {num_hc_presets} random presets (one-vs-all)...")
+    rnd_sub_mrr, rnd_sub_top_k_mrr, _, rnd_sub_loss = one_vs_all_eval(
+        model=model, dataset=rnd_dataset, subset_size=num_hc_presets, device=device
+    )
     rnd_sub_results = {
         "mrr": rnd_sub_mrr,
         "top_k_mrr": rnd_sub_top_k_mrr,
         "loss": rnd_sub_loss,
     }
 
-    log.info("Computing evaluation metrics on the random presets dataset...")
-    rnd_loss, rnd_mrr, rnd_top_k_mrr, rnd_ranks_dict = rnd_presets_eval(
-        model=model, dataset=rnd_dataset, num_ranks=256
+    log.info(f"Computing evaluation metrics on {len(rnd_dataset)} random presets (non-overlapping)...")
+    rnd_mrr, rnd_top_k_mrr, rnd_ranks_dict, rnd_loss = non_overlapping_eval(
+        model=model, dataset=rnd_dataset, num_ranks=256, device=device
     )
-
     rnd_results = {
         "mrr": rnd_mrr,
         "top_k_mrr": rnd_top_k_mrr,
@@ -115,12 +109,14 @@ def evaluate(cfg: DictConfig) -> None:
         "loss": rnd_loss,
         "num_rnd_presets": len(rnd_dataset),
     }
+
     results = {
         "hc": hc_results,
         "rnd": rnd_results,
         "rnd_sub": rnd_sub_results,
     }
 
+    ##### Logging results
     object_dict = {
         "cfg": cfg,
         "model": m_preset,
@@ -130,7 +126,7 @@ def evaluate(cfg: DictConfig) -> None:
 
     if cfg.get("wandb"):
         log.info("Logging hyperparameters...")
-        eval_logger(object_dict=object_dict)
+        eval_logger(object_dict=object_dict, run=run)
         wandb.finish()  # required for hydra multirun
 
     with open(Path(HydraConfig.get().runtime.output_dir) / "mrr_results.pkl", "wb") as f:

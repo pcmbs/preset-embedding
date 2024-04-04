@@ -61,7 +61,6 @@ def test_mlp_raw(tal_preset_helper, out_features, kwargs):
     assert mlp.blocks[0].block[3].p == kwargs.get("block_kwargs", {}).get("dropout_p", 0.0)
 
     # assert that the input size is correct
-    # TODO: mod with more advance embedding layers
     assert mlp.embedding_layer.out_length == tal_preset_helper.num_used_parameters
     assert mlp.blocks[0].block[0].in_features == tal_preset_helper.num_used_parameters
 

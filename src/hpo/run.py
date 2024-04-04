@@ -14,8 +14,6 @@ Remarks:
 
 The config is defined in `configs/hpo/hpo.yaml`.
 """
-
-# TODO: refactor script and config to allow HPO of models
 from functools import partial
 from pathlib import Path
 import signal
@@ -290,16 +288,7 @@ def hpo(cfg: DictConfig) -> None:
 
 if __name__ == "__main__":
     # import sys
-
-    # args = [
-    #     "src/hpo/run.py",
-    #     "m_preset=mlp_oh_b_opt",
-    #     "synth=dexed",
-    #     "tag=test",
-    #     "num_trials=100",
-    #     "sampler.n_startup_trials=64",
-    # ]
-
+    # args = ["src/hpo/run.py", <other args for debug>]
     # gettrace = getattr(sys, "gettrace", None)
     # if gettrace():
     #     sys.argv = args

@@ -13,11 +13,11 @@ model:
     block_dropout_p: 0.0
 
   type: mlp_oh
-  size: b
-  val_mrr: 0.5478
-  epoch: 9
-  num_train_epochs: 9
+  val_mrr: 0.5633
+  val_loss: 0.0735
+  epoch: 27
+  num_train_epochs: 29
 
-  ckpt_name: ${synth.name}_${model.type}_${model.size}_e${model.epoch}_mrr${model.val_mrr}.ckpt
+  ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_mrr${model.val_mrr}.ckpt
 
-task_name: ${synth.name}_${model.type}_${model.size}
+task_name: ${synth.name}_${model.type}

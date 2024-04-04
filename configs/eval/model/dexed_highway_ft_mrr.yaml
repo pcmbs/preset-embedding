@@ -1,0 +1,25 @@
+# @package _global_
+
+defaults:
+  - override /synth: dexed
+
+model: 
+  cfg: 
+    _target_: models.preset.highway_ft
+    hidden_features: 512
+    num_blocks: 6
+    token_dim: 64
+    pe_dropout_p: 0.0
+    block_norm: BatchNorm1d
+    block_act_fn: ReLU
+    block_dropout_p: 0.0
+  
+  type: highway_ft
+  val_mrr: 0.7638
+  val_loss: 0.0692
+  epoch: 22
+  num_train_epochs: 29
+
+  ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_mrr${model.val_mrr}.ckpt
+
+task_name: ${synth.name}_${model.type}_mrr

@@ -13,12 +13,15 @@ import wandb
 log = logging.getLogger(__name__)
 
 
-def eval_logger(object_dict: Dict[str, Any]) -> None:
+def eval_logger(object_dict: Dict[str, Any], run: wandb.sdk.wandb_run.Run) -> None:
     """Log infos & hps related to the evaluation.
 
     Args
     - `object_dict`: A dictionary containing the following objects:
-        TODO
+        - `"cfg"`: A DictConfig object containing the main config.
+        - `"model"`: nn.Module for the preset encoder model.
+        - `"dataset_cfg"`: A DictConfig object containing the dataset config.
+        - `"results"`: A dictionary containing the evaluation results.
     """
     hparams = {}
 
@@ -46,7 +49,6 @@ def eval_logger(object_dict: Dict[str, Any]) -> None:
 
     # Model hyperparameters
     hparams["model/type"] = cfg["model"]["type"]
-    hparams["model/size"] = cfg["model"]["size"]
     hparams["model/num_parameters"] = object_dict["model"].num_parameters
     hparams["model/ckpt_name"] = cfg["model"]["ckpt_name"]
     hparams["num_train_epochs"] = cfg["model"]["num_train_epochs"]
@@ -60,26 +62,39 @@ def eval_logger(object_dict: Dict[str, Any]) -> None:
         else:
             hparams[f"model/{k}"] = v
 
+    # Results
+    metrics_dict = {}
     # Results from training
-    wandb.run.summary["val/mrr"] = cfg["model"]["val_mrr"]
-    wandb.run.summary["val/epoch"] = cfg["model"]["epoch"]
+    metrics_dict["val"] = {
+        "mrr": cfg["model"]["val_mrr"],
+        "loss": cfg["model"]["val_loss"],
+        "epoch": cfg["model"]["epoch"],
+    }
     # Results on hand-crafted presets
-    wandb.run.summary["hc/mrr"] = hc_results["mrr"]
-    wandb.run.summary["hc/loss"] = hc_results["loss"]
+    metrics_dict["hc"] = {"mrr": hc_results["mrr"], "loss": hc_results["loss"]}
     for k, mrr in enumerate(hc_results["top_k_mrr"]):
-        wandb.run.summary[f"hc/top_{k+1}_mrr"] = mrr
+        metrics_dict["hc"][f"top_{k+1}_mrr"] = mrr
     # Results on random presets
-    wandb.run.summary["rnd/mrr"] = rnd_results["mrr"]
-    wandb.run.summary["rnd/loss"] = rnd_results["loss"]
+    metrics_dict["rnd"] = {"mrr": rnd_results["mrr"], "loss": rnd_results["loss"]}
     for k, mrr in enumerate(rnd_results["top_k_mrr"]):
-        wandb.run.summary[f"rnd/top_{k+1}_mrr"] = mrr
+        metrics_dict["rnd"][f"top_{k+1}_mrr"] = mrr
     # Results on random subsets of presets
-    wandb.run.summary["rnd_sub/mrr"] = rnd_sub_results["mrr"]
-    wandb.run.summary["rnd_sub/loss"] = rnd_sub_results["loss"]
+    metrics_dict["rnd_sub"] = {"mrr": rnd_sub_results["mrr"], "loss": rnd_sub_results["loss"]}
     for k, mrr in enumerate(rnd_sub_results["top_k_mrr"]):
-        wandb.run.summary[f"rnd_sub/top_{k+1}_mrr"] = mrr
+        metrics_dict["rnd_sub"][f"top_{k+1}_mrr"] = mrr
 
+    raw_table = []
+    for k, v in metrics_dict.items():
+        for kk, vv in v.items():
+            if kk in ["loss", "top_1_mrr", "top_5_mrr"]:
+                raw_table.append((k, kk, vv))
+    columns = ["dataset", "metric", "value"]
+
+    # log metrics
+    run.log({"metrics": metrics_dict})  # log instead of summary to be able to create bar charts in wandb UI
+    run.summary["grouped_metrics"] = wandb.Table(data=raw_table, columns=columns)
     wandb.config.update(hparams)
+
     # hydra config is saved under <project_name>/Runs/<run_id>/Files/.hydra
     wandb.save(
         glob_str=os.path.join(cfg["paths"].get("output_dir"), ".hydra", "*.yaml"),

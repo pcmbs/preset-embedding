@@ -1,11 +1,11 @@
 # @package _global_
 
 defaults:
-  - override /train_dataset: dexed_mn04_v1
-  - override /val_dataset: dexed_mn04_v1
+  - override /train_dataset: diva_mn04_v1
+  - override /val_dataset: diva_mn04_v1
   - override /m_preset: tfm
 
-task_name: dexed_tfm_b
+task_name: diva_tfm_b_re20
 
 ########## hyperparameters 
 
@@ -21,9 +21,9 @@ solver:
   lr: 1e-3
   optimizer:
     betas:
-      - 0.910 # 0.890
+      - 0.890
       - 0.987
-    eps: 2e-8 # 5e-10
+    eps: 5e-10
 
   scheduler:
     min_lr: 2e-6
@@ -45,3 +45,5 @@ trainer:
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
+
+ckpt_path: ${paths.ckpt_dir}/restart/diva_tfm_b_re20.ckpt

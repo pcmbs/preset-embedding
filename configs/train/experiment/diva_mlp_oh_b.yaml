@@ -27,7 +27,8 @@ solver:
     num_warmup_steps: 7500
     warmup_factor: 1.0
     num_decay_steps: 192_500 # warmup+cosine corresponds to 10 epochs at bs=512
-    num_restart_steps: null
+    num_restart_steps: 400_000 # 20 epochs
+    restart_factor: 1.0 # full restart
 
 ########## training setup
 train_dataset:
@@ -36,9 +37,10 @@ train_dataset:
 
 trainer:
   # kwargs for lightning trainer
-  max_epochs: 10
+  max_epochs: 30
   
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
-  
+
+# ckpt_path: ${paths.ckpt_dir}/restart/diva_mlp_oh_b_re20.ckpt

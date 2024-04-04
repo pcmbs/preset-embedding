@@ -1,0 +1,28 @@
+# @package _global_
+
+defaults:
+  - override /synth: dexed
+
+model: 
+  cfg: 
+    _target_: models.preset.tfm
+    pe_type: absolute
+    hidden_features: 256
+    num_blocks: 6
+    num_heads: 8
+    mlp_factor: 4.0
+    pooling_type: cls
+    last_activation: ReLU
+    pe_dropout_p: 0.0
+    block_activation: relu
+    block_dropout_p: 0.0
+
+  type: tfm
+  val_mrr: TODO
+  val_loss: TODO
+  epoch: TODO
+  num_train_epochs: 29
+
+  ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_loss${model.val_loss}.ckpt
+
+task_name: ${synth.name}_${model.type}_loss

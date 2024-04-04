@@ -70,8 +70,8 @@ SYNTH_PARAMETERS = [
     SynthParameter(index=37, name="env1:velocity", type_="num"),
     SynthParameter(index=38, name="env1:model", type_="cat", cardinality=3, default_value=0.5),
     SynthParameter(index=39, name="env1:trigger", type_="cat", cardinality=4),
-    SynthParameter(index=40, name="env1:quantise", type_="bin"),  # TODO: exclude?
-    SynthParameter(index=41, name="env1:curve", type_="bin"),  # TODO: exclude?
+    SynthParameter(index=40, name="env1:quantise", type_="bin"),
+    SynthParameter(index=41, name="env1:curve", type_="bin"),
     SynthParameter(index=42, name="env1:release_on", type_="bin"),
     SynthParameter(index=43, name="env1:keyfollow", type_="num"),
     ### ENV2
@@ -359,7 +359,7 @@ SYNTH_PARAMETERS = [
     SynthParameter(index=149, name="hpf:resonance", type_="num"),
     # Revision available for HPF Bite only (exclude and fix to 0.0)
     SynthParameter(index=150, name="hpf:revision", type_="cat", cardinality=2),
-    # TODO: didn't find parameter, which anyway is excluded and fixed to 0.0 since depends on midi note
+    # FIXME: didn't find parameter, which anyway is excluded and fixed to 0.0 since depends on midi note
     SynthParameter(index=151, name="hpf:keyfollow", type_="num"),
     # Freq Mod Src and Depth available for HPF Bite only
     SynthParameter(
@@ -470,7 +470,7 @@ SYNTH_PARAMETERS = [
         excluded_cat_idx=_EXCLUDED_CAT_FOR_MOD,
     ),
     SynthParameter(index=185, name="vca1:panmoddepth", type_="num", default_value=0.5099999904632568),
-    # TODO: don't know what the two following parameters are
+    # FIXME: don't know what the two following parameters are
     SynthParameter(index=186, name="vca1:mode", type_="num", default_value=0.0),
     SynthParameter(index=187, name="vca1:offset", type_="num", default_value=0.4399999976158142),
     ######################################################################################################

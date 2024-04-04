@@ -44,3 +44,4 @@ trainer:
   # set True to to ensure deterministic results
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
+

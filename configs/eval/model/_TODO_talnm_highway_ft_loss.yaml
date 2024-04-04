@@ -15,11 +15,11 @@ model:
     block_dropout_p: 0.0
 
   type: highway_ft
-  size: b
-  val_mrr: 0.9779
-  epoch: 7
-  num_train_epochs: 9
+  val_mrr: TODO
+  val_loss: TODO
+  epoch: TODO
+  num_train_epochs: 29
 
-  ckpt_name: ${synth.name}_${model.type}_${model.size}_e${model.epoch}_mrr${model.val_mrr}.ckpt
+  ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_loss${model.val_loss}.ckpt
 
-task_name: ${synth.name}_${model.type}_${model.size}
+task_name: ${synth.name}_${model.type}_loss

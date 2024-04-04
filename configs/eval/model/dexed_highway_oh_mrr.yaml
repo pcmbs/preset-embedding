@@ -1,0 +1,23 @@
+# @package _global_
+
+defaults:
+  - override /synth: dexed
+
+model: 
+  cfg: 
+    _target_: models.preset.highway_oh
+    hidden_features: 768
+    num_blocks: 6
+    block_norm: BatchNorm1d
+    block_act_fn: ReLU
+    block_dropout_p: 0.0
+
+  type: highway_oh
+  val_mrr: 0.8123
+  val_loss: 0.0614
+  epoch: 24
+  num_train_epochs: 29
+
+  ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_mrr${model.val_mrr}.ckpt
+
+task_name: ${synth.name}_${model.type}_mrr

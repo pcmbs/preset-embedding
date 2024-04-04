@@ -15,4 +15,5 @@ ckpt_train:
   save_top_k: 1 # save k best models (determined by above metric)
 
   every_n_epochs: 1 # number of epochs between checkpoints
-  save_on_train_epoch_end: True # run checkpointing at the end of the training epoch
+  # run checkpointing at the end of the validation epoch (can be several times per training epoch)
+  save_on_train_epoch_end: False

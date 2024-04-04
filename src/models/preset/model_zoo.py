@@ -227,9 +227,7 @@ def tfm(
     block_activation: str = "relu",
     block_dropout_p: float = 0.0,
 ) -> nn.Module:
-    """
-    TODO
-    """
+    """ """
     return TfmBuilder(
         out_features=out_features,
         tokenizer=PresetTokenizer,

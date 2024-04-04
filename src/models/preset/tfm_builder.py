@@ -103,25 +103,6 @@ class TfmBuilder(nn.Module):
         return x
 
 
-# def tfm(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
-#     """
-#     TODO
-#     """
-#     return TfmBuilder(
-#         out_features=out_features,
-#         tokenizer=PresetTokenizer,
-#         pe_type=kwargs.get("pe_type", "absolute"),
-#         hidden_features=kwargs.get("hidden_features", 256),
-#         num_blocks=kwargs.get("num_blocks", 6),
-#         num_heads=kwargs.get("num_heads", 4),
-#         mlp_factor=kwargs.get("mlp_factor", 2.0),
-#         pooling_type=kwargs.get("pooling_type", "cls"),
-#         last_activation=kwargs.get("last_activation", "ReLU"),
-#         tokenizer_kwargs={"preset_helper": preset_helper, "pe_dropout_p": kwargs.get("pe_dropout_p", 0.0)},
-#         block_kwargs=kwargs.get("block_kwargs", {"activation": "relu", "dropout": 0.0}),
-#     )
-
-
 if __name__ == "__main__":
     import os
     from timeit import default_timer as timer
