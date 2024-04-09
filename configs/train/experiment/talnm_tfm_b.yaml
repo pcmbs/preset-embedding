@@ -30,7 +30,8 @@ solver:
     num_warmup_steps: 7500
     warmup_factor: 1.0
     num_decay_steps: 392_500 # warmup+cosine corresponds to 10 epochs at bs=512
-    num_restart_steps: null
+    num_restart_steps: 800_000 # 20 epochs
+    restart_factor: 1.0 # full restart
 
 ########## training setup
 train_dataset:
@@ -45,3 +46,4 @@ trainer:
   # makes training slower but gives more reproducibility than just setting seeds
   deterministic: True
 
+# ckpt_path: ${paths.ckpt_dir}/restart/talnm_tfm_b_re20.ckpt

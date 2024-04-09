@@ -1,9 +1,9 @@
 # @package _global_
 
 defaults:
-  - override /synth: talnm
+  - override /synth: diva
 
-model:
+model: 
   cfg: 
     _target_: models.preset.highway_oh
     hidden_features: 768
@@ -13,11 +13,11 @@ model:
     block_dropout_p: 0.0
 
   type: highway_oh
-  val_mrr: TODO
-  val_loss: TODO
-  epoch: TODO
+  val_mrr: 0.8159
+  val_loss: 0.0548
+  epoch: 28
   num_train_epochs: 29
 
   ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_loss${model.val_loss}.ckpt
 
-task_name: ${synth.name}_${model.type}_loss
+task_name: ${synth.name}_${model.type}

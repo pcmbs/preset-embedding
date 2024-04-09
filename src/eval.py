@@ -11,6 +11,7 @@ Usage example:
 See configs/eval/model for available models
 """
 from pathlib import Path
+import pickle
 
 import hydra
 from hydra.core.hydra_config import HydraConfig
@@ -129,8 +130,8 @@ def evaluate(cfg: DictConfig) -> None:
         eval_logger(object_dict=object_dict, run=run)
         wandb.finish()  # required for hydra multirun
 
-    with open(Path(HydraConfig.get().runtime.output_dir) / "mrr_results.pkl", "wb") as f:
-        torch.save(results, f)
+    with open(Path(HydraConfig.get().runtime.output_dir) / "results.pkl", "wb") as f:
+        pickle.dump(results, f)
 
 
 if __name__ == "__main__":

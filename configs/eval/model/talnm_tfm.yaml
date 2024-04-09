@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - override /synth: diva
+  - override /synth: talnm
 
 model: 
   cfg: 
@@ -18,11 +18,11 @@ model:
     block_dropout_p: 0.0
 
   type: tfm
-  val_mrr: TODO
-  val_loss: TODO
-  epoch: TODO
+  val_mrr: 1.0000
+  val_loss: 0.0359
+  epoch: 29
   num_train_epochs: 29
 
   ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_loss${model.val_loss}.ckpt
 
-task_name: ${synth.name}_${model.type}_loss
+task_name: ${synth.name}_${model.type}

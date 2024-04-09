@@ -13,7 +13,7 @@ defaults:
 # higher of presets make a given MRR value harder to achieve.
 # Passing -1, 0, or a number larger than the size of the dataset 
 # will result in using the full dataset.
-subset_size: -1
+subset_size: 4096
 
 # task name determines output directory path (overwritten in model cfg)
 task_name: ""

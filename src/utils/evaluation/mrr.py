@@ -244,8 +244,26 @@ def non_overlapping_eval(
 
 
 def top_k_mrr_score(ranks: Dict, k: int = 5) -> float:
+    """
+    Calculate the top-k Mean Reciprocal Rank (MRR) score for the given ranks.
+    If a target has no matches in the top-k ranks, it will be assigned a score of 0.
+
+    Args
+    - `ranks` (Dict): A dictionary containing ranks for different targets.
+    - `k` (int): An integer representing the top 'k' ranks to consider (Default: 5).
+
+    Returns
+    - A float representing the mean reciprocal rank score.
+    """
+    # get the total number of targets, i.e., number of ranking evaluation
     num_targets = sum(len(val) for val in ranks.values())
+    # compute the reciprocal rank at k:
+    # 1) get the number of relevant items that ended up with rank i and
+    #    divide them by the rank i for each rank i \in {1,k}
+    # 2) sum over all ranks i \in {1,k}
     recriprocal_rank_at_k = sum(len(ranks.get(rank, [])) / rank for rank in range(1, k + 1))
+    # divide the reciprocal rank at k by the number of targets.
+    # This has the same effect as assigning a score of 0 for relevant items that did not end up in the top-k ranks
     return recriprocal_rank_at_k / num_targets
 
 

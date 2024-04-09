@@ -1,5 +1,6 @@
 """
 """
+
 import torch
 from torch import nn
 import torchaudio.functional as Fa
@@ -47,16 +48,16 @@ class MelModel(nn.Module):
         self.reduce_fn = getattr(reduce_fn, reduction)
 
         # normalization statistics (from AudioSet)
-        # self.norm_mean = -4.2677393
-        # self.norm_std = 4.5689974
+        self.norm_mean = -4.2677393
+        self.norm_std = 4.5689974
 
         # # normalization statistics (from EfficientAT)
         # self.norm_mean = 4.5
         # self.norm_std = 5
 
         # normalization statistics (based on 2048 random preset from tal_noisemaker)
-        self.norm_mean = -48.586097717285156
-        self.norm_std = 18.549829483032227
+        # self.norm_mean = -48.586097717285156
+        # self.norm_std = 18.549829483032227
 
     @property
     def segment(self) -> None:
@@ -119,4 +120,4 @@ def mel128_mfcc0_min80_avg_time_pool() -> MelModel:
 
 
 # best resulting mel model from the sound attributes ranking evaluation
-mel128 = mel128_mfcc0_min80_avg_time_pool  # sound attr. eval mean: 0.903
+mel128 = mel128_mfcc0_min80_avg_time_pool  # sound attr. eval mean: 0.908

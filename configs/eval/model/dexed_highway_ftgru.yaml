@@ -1,7 +1,7 @@
 # @package _global_
 
 defaults:
-  - override /synth: talnm
+  - override /synth: dexed
 
 model: 
   cfg: 
@@ -15,11 +15,11 @@ model:
     block_dropout_p: 0.0
 
   type: highway_ftgru
-  val_mrr: TODO
-  val_loss: TODO
-  epoch: TODO
+  val_mrr: 0.8899
+  val_loss: 0.0506
+  epoch: 28
   num_train_epochs: 29
 
   ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_loss${model.val_loss}.ckpt
 
-task_name: ${synth.name}_${model.type}_loss
+task_name: ${synth.name}_${model.type}
