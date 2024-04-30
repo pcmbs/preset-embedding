@@ -27,17 +27,17 @@ def eval_logger(object_dict: Dict[str, Any], run: wandb.sdk.wandb_run.Run) -> No
 
     cfg = OmegaConf.to_container(object_dict["cfg"], resolve=True)
     dataset_cfg = object_dict["dataset_cfg"]
-    hc_results = object_dict["results"]["hc"]
-    rnd_results = object_dict["results"]["rnd"]
-    rnd_sub_results = object_dict["results"]["rnd_sub"]
+    hc_results = object_dict["results"].get("hc", {})
+    rnd_nol_results = object_dict["results"].get("rnd_nol", {})
+    rnd_results = object_dict["results"].get("rnd", {})
+    rnd_incr_results = object_dict["results"].get("rnd_incr", {})
 
     # General hyperparameters
     hparams["seed"] = cfg.get("seed")
+    hparams["num_runs"] = cfg.get("num_runs")
 
     # Data related hyperparameters
     hparams["data/synth"] = cfg["synth"]["name"]
-    hparams["data/num_hc_presets"] = hc_results["num_hc_presets"]
-    hparams["data/num_rnd_presets"] = rnd_results["num_rnd_presets"]
     hparams["data/excluded_params"] = dataset_cfg["params_to_exclude"]
     hparams["data/num_used_params"] = dataset_cfg["num_used_params"]
     hparams["data/render_duration_in_sec"] = dataset_cfg["render_duration_in_sec"]
@@ -53,14 +53,14 @@ def eval_logger(object_dict: Dict[str, Any], run: wandb.sdk.wandb_run.Run) -> No
     hparams["model/ckpt_name"] = cfg["model"]["ckpt_name"]
     hparams["num_train_epochs"] = cfg["model"]["num_train_epochs"]
 
-    for k, v in cfg["model"]["cfg"].items():
-        if k == "_target_":
+    for i, v in cfg["model"]["cfg"].items():
+        if i == "_target_":
             hparams["model/name"] = v.split(".")[-1]
-        elif k in ["embedding_kwargs", "block_kwargs"]:
+        elif i in ["embedding_kwargs", "block_kwargs"]:
             for kk, vv in v.items():
-                hparams[f"model/{k}/{kk}"] = vv
+                hparams[f"model/{i}/{kk}"] = vv
         else:
-            hparams[f"model/{k}"] = v
+            hparams[f"model/{i}"] = v
 
     # Results
     metrics_dict = {}
@@ -71,28 +71,54 @@ def eval_logger(object_dict: Dict[str, Any], run: wandb.sdk.wandb_run.Run) -> No
         "epoch": cfg["model"]["epoch"],
     }
     # Results on hand-crafted presets
-    metrics_dict["hc"] = {"mrr": hc_results["mrr"], "loss": hc_results["loss"]}
-    for k, mrr in enumerate(hc_results["top_k_mrr"]):
-        metrics_dict["hc"][f"top_{k+1}_mrr"] = mrr
-    # Results on random presets
-    metrics_dict["rnd"] = {"mrr": rnd_results["mrr"], "loss": rnd_results["loss"]}
-    for k, mrr in enumerate(rnd_results["top_k_mrr"]):
-        metrics_dict["rnd"][f"top_{k+1}_mrr"] = mrr
-    # Results on random subsets of presets
-    metrics_dict["rnd_sub"] = {"mrr": rnd_sub_results["mrr"], "loss": rnd_sub_results["loss"]}
-    for k, mrr in enumerate(rnd_sub_results["top_k_mrr"]):
-        metrics_dict["rnd_sub"][f"top_{k+1}_mrr"] = mrr
+    if hc_results:
+        hparams["data/num_hc_presets"] = hc_results["num_hc_presets"]
+        metrics_dict["hc"] = {
+            "mrr_mean": hc_results["mrr"]["mean"],
+            "mrr_std": hc_results["mrr"]["std"],
+            "loss_mean": hc_results["loss"]["mean"],
+            "loss_std": hc_results["loss"]["std"],
+        }
+        for s in ["mean", "std"]:
+            for i, result in enumerate(hc_results["top_k_mrr"][s]):
+                metrics_dict["hc"][f"top_{i+1}_mrr_{s}"] = result
 
-    raw_table = []
-    for k, v in metrics_dict.items():
-        for kk, vv in v.items():
-            if kk in ["loss", "top_1_mrr", "top_5_mrr"]:
-                raw_table.append((k, kk, vv))
-    columns = ["dataset", "metric", "value"]
+    # Results on random presets
+    if rnd_nol_results:
+        hparams["data/num_rnd_presets"] = rnd_nol_results["num_rnd_presets"]
+        metrics_dict["rnd_nol"] = {"mrr": rnd_nol_results["mrr"], "loss": rnd_nol_results["loss"]}
+        for i, mrr in enumerate(rnd_nol_results["top_k_mrr"]):
+            metrics_dict["rnd_nol"][f"top_{i+1}_mrr"] = mrr
+    # Results on random subsets of presets
+    if rnd_results:
+        metrics_dict["rnd"] = {
+            "mrr_mean": rnd_results["mrr"]["mean"],
+            "mrr_std": rnd_results["mrr"]["std"],
+            "loss_mean": rnd_results["loss"]["mean"],
+            "loss_std": rnd_results["loss"]["std"],
+        }
+        for s in ["mean", "std"]:
+            for i, result in enumerate(rnd_results["top_k_mrr"][s]):
+                metrics_dict["rnd"][f"top_{i+1}_mrr_{s}"] = result
+
+    # Results on random incremental presets
+    # TODO: check how, and if it makes sense to log rnd_incr_results
+    # rnd_incr_table = []
+    # for k, v in rnd_incr_results.items():
+    #     metrics_dict["rnd_incr"][k]["mrr"] = v["mrr"]
+    #     metrics_dict["rnd_incr"][k]["loss"] = v["loss"]
+
+    # raw_table = []
+    # for k, v in metrics_dict.items():
+    #     if k != "rnd_incr":
+    #         for kk, vv in v.items():
+    #             if kk in ["loss", "mrr"]:
+    #                 raw_table.append((k, kk, vv))
+    # columns = ["dataset", "metric", "value"]
 
     # log metrics
     run.log({"metrics": metrics_dict})  # log instead of summary to be able to create bar charts in wandb UI
-    run.summary["grouped_metrics"] = wandb.Table(data=raw_table, columns=columns)
+    # run.summary["grouped_metrics"] = wandb.Table(data=raw_table, columns=columns)
     wandb.config.update(hparams)
 
     # hydra config is saved under <project_name>/Runs/<run_id>/Files/.hydra

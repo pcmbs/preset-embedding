@@ -5,10 +5,11 @@
 Evaluation script.
 Adapted from https://github.com/ashleve/lightning-hydra-template/blob/main/src/train.py
 
-Usage example:
-    python src/eval.py model=<model-name>
+See configs/eval/eval.yaml for more details on CLI arguments
 
-See configs/eval/model for available models
+Usage example using hydra multirun to evaluate all models on Tal-NoiseMaker:
+    python src/eval.py -m model="glob(talnm*)"
+
 """
 from pathlib import Path
 import pickle
@@ -16,9 +17,11 @@ import pickle
 import hydra
 from hydra.core.hydra_config import HydraConfig
 import lightning as L
-from torch import nn
+import numpy as np
 from omegaconf import DictConfig
+from torch import nn
 import torch
+from tqdm import tqdm
 import wandb
 
 from data.datasets import SynthDatasetPkl
@@ -76,11 +79,34 @@ def evaluate(cfg: DictConfig) -> None:
     model.freeze()
 
     ##### Computing Evaluation Metrics
+    # the following statement should only take len(hc_dataset) for talnm, since there are only 404 presets..
     num_hc_presets = cfg.subset_size if 0 < cfg.subset_size < len(hc_dataset) else len(hc_dataset)
     log.info(f"Computing evaluation metrics on {num_hc_presets} hand-crafted presets (one-vs-all)...")
-    hc_mrr, hc_top_k_mrr, hc_ranks_dict, hc_loss = one_vs_all_eval(
-        model=model, dataset=hc_dataset, subset_size=cfg.subset_size, device=device
-    )
+    hc_mrr = []
+    hc_loss = []
+    hc_top_k_mrr = []
+    pbar = tqdm(range(cfg.num_runs), total=cfg.num_runs, dynamic_ncols=True)
+    for i in pbar:
+        mrr, top_k_mrr, hc_ranks_dict, loss = one_vs_all_eval(
+            model=model,
+            dataset=hc_dataset,
+            subset_size=cfg.subset_size,
+            device=device,
+            seed=cfg.seed + i,
+            log_results=cfg.num_runs == 1,
+        )
+        hc_mrr.append(mrr)
+        hc_top_k_mrr.append(top_k_mrr)
+        hc_loss.append(loss)
+
+    hc_mrr = {"mean": np.mean(hc_mrr), "std": np.std(hc_mrr)}
+    hc_top_k_mrr = np.row_stack(hc_top_k_mrr)
+    hc_top_k_mrr = {
+        "mean": np.mean(hc_top_k_mrr, axis=0),
+        "std": np.std(hc_top_k_mrr, axis=0),
+    }
+    hc_loss = {"mean": np.mean(hc_loss), "std": np.std(hc_loss)}
+
     hc_results = {
         "mrr": hc_mrr,
         "top_k_mrr": hc_top_k_mrr,
@@ -89,32 +115,72 @@ def evaluate(cfg: DictConfig) -> None:
         "num_hc_presets": num_hc_presets,
     }
 
-    log.info(f"Computing evaluation metrics on {num_hc_presets} random presets (one-vs-all)...")
-    rnd_sub_mrr, rnd_sub_top_k_mrr, _, rnd_sub_loss = one_vs_all_eval(
-        model=model, dataset=rnd_dataset, subset_size=num_hc_presets, device=device
-    )
-    rnd_sub_results = {
-        "mrr": rnd_sub_mrr,
-        "top_k_mrr": rnd_sub_top_k_mrr,
-        "loss": rnd_sub_loss,
-    }
+    log.info(f"Computing evaluation metrics on {cfg.subset_size} random presets (one-vs-all)...")
+    rnd_mrr = []
+    rnd_loss = []
+    rnd_top_k_mrr = []
+    pbar = tqdm(range(cfg.num_runs), total=cfg.num_runs, dynamic_ncols=True)
+    for i in pbar:
+        mrr, top_k_mrr, _, loss = one_vs_all_eval(
+            model=model,
+            dataset=rnd_dataset,
+            subset_size=cfg.subset_size,
+            device=device,
+            seed=cfg.seed + i,
+            log_results=cfg.num_runs == 1,
+        )
+        rnd_mrr.append(mrr)
+        rnd_top_k_mrr.append(top_k_mrr)
+        rnd_loss.append(loss)
 
-    log.info(f"Computing evaluation metrics on {len(rnd_dataset)} random presets (non-overlapping)...")
-    rnd_mrr, rnd_top_k_mrr, rnd_ranks_dict, rnd_loss = non_overlapping_eval(
-        model=model, dataset=rnd_dataset, num_ranks=256, device=device
-    )
+    rnd_mrr = {"mean": np.mean(rnd_mrr), "std": np.std(rnd_mrr)}
+    rnd_top_k_mrr = np.row_stack(rnd_top_k_mrr)
+    rnd_top_k_mrr = {"mean": np.mean(rnd_top_k_mrr, axis=0), "std": np.std(rnd_top_k_mrr, axis=0)}
+    rnd_loss = {"mean": np.mean(rnd_loss), "std": np.std(rnd_loss)}
+
     rnd_results = {
         "mrr": rnd_mrr,
         "top_k_mrr": rnd_top_k_mrr,
-        "ranks": rnd_ranks_dict,
         "loss": rnd_loss,
-        "num_rnd_presets": len(rnd_dataset),
     }
+
+    rnd_incr_results = {}
+    if cfg.random_incremential:
+        log.info("Computing evaluation metrics on increasing number of random presets (one-vs-all)...")
+        for i in range(9, int(np.log2(len(rnd_dataset))) + 1):
+            num_presets = int(2**i)
+            log.info(f"{num_presets} random presets...")
+            mrr, _, _, loss = one_vs_all_eval(
+                model=model,
+                dataset=rnd_dataset,
+                subset_size=num_presets,
+                device=device,
+                seed=cfg.seed,
+                log_results=False,
+            )
+            rnd_incr_results[num_presets] = {"mrr": mrr, "loss": loss}
+
+    if cfg.random_non_overlapping:
+        log.info(f"Computing evaluation metrics on {len(rnd_dataset)} random presets (non-overlapping)...")
+        rnd_nol_mrr, rnd_nol_top_k_mrr, rnd_nol_ranks_dict, rnd_nol_loss = non_overlapping_eval(
+            model=model, dataset=rnd_dataset, num_ranks=256, device=device, seed=cfg.seed, log_results=True
+        )
+
+        rnd_nol_results = {
+            "mrr": rnd_nol_mrr,
+            "top_k_mrr": rnd_nol_top_k_mrr,
+            "ranks": rnd_nol_ranks_dict,
+            "loss": rnd_nol_loss,
+            "num_rnd_presets": len(rnd_dataset),
+        }
+    else:
+        rnd_nol_results = {}
 
     results = {
         "hc": hc_results,
         "rnd": rnd_results,
-        "rnd_sub": rnd_sub_results,
+        "rnd_nol": rnd_nol_results,
+        "rnd_incr": rnd_incr_results,
     }
 
     ##### Logging results
@@ -135,4 +201,11 @@ def evaluate(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
+    import sys
+
+    args = ["src/eval.py", "model=talnm_highway_ft", "~wandb"]
+
+    gettrace = getattr(sys, "gettrace", None)
+    if gettrace():
+        sys.argv = args
     evaluate()  # pylint: disable=no-value-for-parameter

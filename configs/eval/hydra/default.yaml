@@ -8,8 +8,8 @@ defaults:
 run:
   dir: ${paths.log_dir}/eval/${task_name}_${now:%Y-%m-%d}_${now:%H-%M-%S}
 sweep:
-  dir: ${paths.log_dir}/eval/multirun_${now:%Y-%m-%d}_${now:%H-%M-%S}
-  subdir: ${hydra.job.num}_${task_name}
+  dir: ${paths.log_dir}/eval/results_${now:%Y-%m-%d}_${now:%H-%M-%S}
+  subdir: ${task_name}
 
 job_logging:
   handlers:

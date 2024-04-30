@@ -23,6 +23,6 @@ model:
   epoch: 29
   num_train_epochs: 29
 
-  ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_loss${model.val_loss}.ckpt
+  ckpt_name: diva_tfm_e29_loss0.0432.ckpt
 
-task_name: ${synth.name}_${model.type}
+task_name: diva_tfm

@@ -20,6 +20,6 @@ model:
   epoch: 28
   num_train_epochs: 29
 
-  ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_loss${model.val_loss}.ckpt
+  ckpt_name: dexed_highway_ftgru_e28_loss0.0506.ckpt
 
-task_name: ${synth.name}_${model.type}
+task_name: dexed_highway_ftgru

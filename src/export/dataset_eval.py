@@ -35,7 +35,7 @@ def generate_eval_dataset(
     num_workers: int = 8,
 ) -> None:
     """TODO"""
-
+    print(f"Using device: {DEVICE}")
     ### Load the train config file and create export directory
     path_to_train_cfg = Path(path_to_train_cfg)
     if not path_to_train_cfg.exists():
@@ -50,6 +50,7 @@ def generate_eval_dataset(
         "synth",
         "params_to_exclude",
         "num_used_params",
+        "sample_rate",
         "render_duration_in_sec",
         "midi_note",
         "midi_velocity",
@@ -80,6 +81,7 @@ def generate_eval_dataset(
         midi_velocity=train_cfg["midi_velocity"],
         midi_duration_in_sec=train_cfg["midi_duration_in_sec"],
         rms_range=(0.01, 1.0),
+        sample_rate=train_cfg["sample_rate"],
     )
     print(f"Processing presets from {path_to_json_dataset}...")
     path_to_json_dataset = Path(path_to_json_dataset)
@@ -106,6 +108,7 @@ def generate_eval_dataset(
         midi_note=train_cfg["midi_note"],
         midi_velocity=train_cfg["midi_velocity"],
         midi_duration_in_sec=train_cfg["midi_duration_in_sec"],
+        sample_rate=train_cfg["sample_rate"],
         rms_range=(0.01, 1.0),
     )
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
@@ -132,7 +135,7 @@ def generate_eval_dataset(
                 sample = sample.cpu().numpy()
                 wavfile.write(
                     export_path / "audio" / f"{i*batch_size+j}.wav",
-                    audio_fe.sample_rate,
+                    train_cfg["sample_rate"],
                     sample.T,
                 )
 
@@ -166,8 +169,12 @@ def generate_eval_dataset(
 
 if __name__ == "__main__":
 
-    SYNTH = "dexed"
+    SYNTH = "diva"
     VERSION = 1
+
+    BATCH_SIZE = 128
+    NUM_WORKERS = 8
+    EXPORT_AUDIO = True
 
     # path to the dataset used for training and to the json dataset
     PATH_TO_TRAIN_DATASET = DATASETS_FOLDER / f"{SYNTH}_mn04_size=10240000_seed=500_train_v{VERSION}"
@@ -181,8 +188,9 @@ if __name__ == "__main__":
         path_to_json_dataset=PATH_TO_JSON_DATASET,
         path_to_train_cfg=PATH_TO_TRAIN_DATASET / "configs.pkl",
         export_path=export_path,
-        batch_size=128,
-        num_workers=8,
+        batch_size=BATCH_SIZE,
+        num_workers=NUM_WORKERS,
+        export_audio=EXPORT_AUDIO,
     )
 
     print("Done!")

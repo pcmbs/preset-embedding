@@ -142,11 +142,11 @@ def main(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
-    import sys
+    #     import sys
 
-    args = ["src/train.py", "experiment=debug_ckpt", "logger=none", "callbacks=no_lr_monitor"]
+    #     args = ["src/train.py", "experiment=debug_ckpt", "logger=none", "callbacks=no_lr_monitor"]
 
-    gettrace = getattr(sys, "gettrace", None)
-    if gettrace():
-        sys.argv = args
+    #     gettrace = getattr(sys, "gettrace", None)
+    #     if gettrace():
+    #         sys.argv = args
     main()  # pylint: disable=no-value-for-parameter

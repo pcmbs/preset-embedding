@@ -337,6 +337,7 @@ SYNTH_PARAMETERS = [
     #  - modulate the level of Noise (or the oscillator also responsible for noise) for Triple VCO and DCO
     #  - modulate the osc 1 level of Dual VCO Eco (since responsible for noise)
     #  - modulate Osc Mix of Dual VCO and Digital (since VCO 1 responsible for noise)
+    # FIXME: forgot to exclude mod categories...
     SynthParameter(index=139, name="osc:noisevolmodsrc", type_="cat", cardinality=24),
     SynthParameter(index=140, name="osc:noisevolmoddepth", type_="num", default_value=0.5),
     # Digital shape 1-4: Digital Oscillator specific parameters

@@ -87,7 +87,6 @@ SYNTH_PARAMETERS = (
     # SynthParameter(index=70, name="midi_learn", type_="bin"),
     SynthParameter(index=71, name="envelope_destination", type_="cat", cardinality=8),
     SynthParameter(index=72, name="envelope_speed", type_="num", cardinality=6),
-    # SynthParameter(index=72, name="envelope_speed", type_="cat", cardinality=6),
     SynthParameter(index=73, name="envelope_amount", type_="num"),
     SynthParameter(index=74, name="envelope_one_shot_mode", type_="bin"),
     SynthParameter(index=75, name="envelope_fix_tempo", type_="bin"),

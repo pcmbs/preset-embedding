@@ -20,6 +20,6 @@ model:
   epoch: 29
   num_train_epochs: 29
 
-  ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_loss0.0550.ckpt
+  ckpt_name: talnm_highway_ft_e29_loss0.0550.ckpt
 
-task_name: ${synth.name}_${model.type}
+task_name: talnm_highway_ft

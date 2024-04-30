@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple
 from dotenv import load_dotenv
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 from utils.synth import PresetHelper, PresetRenderer
 
@@ -29,10 +30,11 @@ class ProcessEvalPresets:
         self,
         preset_helper: PresetHelper,
         render_duration_in_sec: float = 5.0,
-        rms_range: Tuple[float, float] = (0.01, 1.0),
         midi_note: Optional[int] = 60,
         midi_velocity: Optional[int] = 100,
         midi_duration_in_sec: Optional[float] = 2,
+        sample_rate: int = 44_100,
+        rms_range: Tuple[float, float] = (0.01, 1.0),
         path_to_plugin: Optional[str | Path] = None,
     ):
         """
@@ -46,8 +48,8 @@ class ProcessEvalPresets:
         - `midi_velocity` (Optional[int]): MIDI note velocity used to check for silent presets.
         Should match the value used during training. (default: 110)
         - `midi_duration_in_sec` (Optional[float]): MIDI note duration in seconds used to check for silent presets.
-        Should match the value used during training..
-        (default: 2.0)
+        Should match the value used during training. (default: 2.0)
+        - `sample_rate` (int): Sample rate of the audio to generate. (default: 44_100)
         - `rms_range` (Tuple[float, float]): acceptable audio RMS range. (default: (0.01, 1.0))
         - `path_to_plugin` (Optional[str]): Path to the plugin. If None (default), it will look for it in
         <project-folder>/data based on preset_helper.synth_name.
@@ -60,6 +62,7 @@ class ProcessEvalPresets:
         self.midi_duration_in_sec = midi_duration_in_sec
         self.render_duration_in_sec = render_duration_in_sec
 
+        self.sample_rate = sample_rate
         self.rms_range = rms_range
 
         if path_to_plugin is None:
@@ -76,7 +79,7 @@ class ProcessEvalPresets:
 
         self.renderer = PresetRenderer(
             synth_path=path_to_plugin,
-            sample_rate=44_100,
+            sample_rate=sample_rate,
             render_duration_in_sec=render_duration_in_sec,
             convert_to_mono=True,
             normalize_audio=False,
@@ -187,8 +190,13 @@ class ProcessEvalPresets:
         self.renderer.set_parameters(
             self.preset_helper.excl_parameters_idx, self.preset_helper.excl_parameters_val
         )
+        pbar = tqdm(
+            presets,
+            total=len(presets),
+            dynamic_ncols=True,
+        )
         # render all presets and compute their RMS. Presets with RMS outside the accepted range are removed
-        for i, params in enumerate(presets):
+        for i, params in enumerate(pbar):
             self.renderer.set_parameters(self.preset_helper.used_parameters_absolute_idx, params)
             self.renderer.set_midi_parameters(self.midi_note, self.midi_velocity, self.midi_duration_in_sec)
             audio_out = torch.from_numpy(self.renderer.render_note())
@@ -219,7 +227,7 @@ class ProcessEvalPresets:
 
 class RenderPreset(Dataset):
     """
-    Small dataset class used to render the presets with the given renderer using multiple workers.
+    Small dataset class used to render presets using multiple workers.
     This class is primarily used for exporting the evaluation dataset of a given synthesizer.
     """
 
@@ -227,6 +235,7 @@ class RenderPreset(Dataset):
         self,
         presets: torch.Tensor,
         preset_helper: PresetHelper,
+        sample_rate: int = 44_100,
         render_duration_in_sec: float = 5.0,
         rms_range: Tuple[float, float] = (0.01, 1.0),
         midi_note: Optional[int] = 60,
@@ -244,6 +253,7 @@ class RenderPreset(Dataset):
         self.midi_duration_in_sec = midi_duration_in_sec
         self.render_duration_in_sec = render_duration_in_sec
 
+        self.sample_rate = sample_rate
         self.rms_range = rms_range
 
         if path_to_plugin is None:
@@ -290,7 +300,7 @@ class RenderPreset(Dataset):
         # instantiate renderer during first iteration to avoid num_workers pickle error on windows
         self.renderer = PresetRenderer(
             synth_path=self.path_to_plugin,
-            sample_rate=44_100,
+            sample_rate=self.sample_rate,
             render_duration_in_sec=self.render_duration_in_sec,
             convert_to_mono=True,
             normalize_audio=False,

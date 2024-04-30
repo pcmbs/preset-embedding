@@ -20,6 +20,6 @@ model:
   epoch: 27
   num_train_epochs: 29
 
-  ckpt_name: ${synth.name}_${model.type}_e${model.epoch}_mrr${model.val_mrr}.ckpt
+  ckpt_name: talnm_highway_ftgru_e27_mrr0.9935.ckpt
 
-task_name: ${synth.name}_${model.type}
+task_name: talnm_highway_ftgru

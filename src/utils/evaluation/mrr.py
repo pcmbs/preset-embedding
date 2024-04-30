@@ -55,9 +55,11 @@ def one_vs_all_eval(
     model: nn.Module,
     dataset: Union[Dataset, Subset],
     subset_size: int = -1,
+    seed: int = 0,
     p: int = 1,
     batch_size: int = 512,
     device: str = "cpu",
+    log_results: bool = True,
 ) -> Tuple[float, List, Dict]:
     """
     Function computing the Mean Reciprocal Rank (MRR) of each samples in the dataset against all other
@@ -68,12 +70,14 @@ def one_vs_all_eval(
     - `dataset` (Union[Dataset, Subset]): dataset used for evaluation.
     - `subset_size` (int): number of (shuffled) samples to be taken from the dataset. If -1 or 0 are
     provided or if subset_size > len(dataset), all samples are taken. (Default: -1)
+    - `seed` (int): seed for the RNG. (default: 0)
     - `p` (int): p value for the p-norm used to compute the distances between each prediction and
     the target in each evaluation. (default: 1)
     - `batch_size` (int): number of samples to to be processed at once to avoid memory issues for
     large datasets. This includes: computing the preset embeddings, computing the pairwise distances,
     and retrieving the rank of the prediciton matching the target. (default: 512)
     - `device` (str): device on which the model will be evaluated. (default: "cpu")
+    - log_results (bool): whether or not to log the results. (default: True)
 
     Returns
     - MRR score as float between 0 and 1
@@ -83,10 +87,14 @@ def one_vs_all_eval(
     - L1 loss as float
     """
     if 0 < subset_size < len(dataset):
-        subset_idx = _get_rnd_non_repeating_integers(N=len(dataset), K=subset_size)
+        subset_idx = _get_rnd_non_repeating_integers(N=len(dataset), K=subset_size, seed=seed)
         dataset = Subset(dataset, subset_idx)
 
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0, drop_last=False)
+    rng_loader = torch.Generator(device="cpu")
+    rng_loader.manual_seed(seed * 100)
+    dataloader = DataLoader(
+        dataset, batch_size=batch_size, shuffle=True, num_workers=0, drop_last=False, generator=rng_loader
+    )
 
     # compute preset embeddings and retrieve audio embeddings
     preset_embeddings = []
@@ -106,30 +114,47 @@ def one_vs_all_eval(
     audio_embeddings = torch.cat(audio_embeddings, dim=0)
     preset_embeddings = torch.cat(preset_embeddings, dim=0)
 
-    # compute the distance matrix between each pair of preset and audio embeddings
-    # in an (non-optimal) iterative way to avoid memory issues
-    distances = []
-    for i in range(math.ceil(len(dataset) / batch_size)):
-        batch_distances = torch.cdist(
-            preset_embeddings[i * batch_size : (i + 1) * batch_size], audio_embeddings, p=p
-        )
-        distances.append(batch_distances)
-    distances = torch.cat(distances, dim=0)
+    # # compute the distance matrix between each pair of preset and audio embeddings
+    # # in an (non-optimal) iterative way to avoid memory issues
+    # distances = []
+    # for i in range(math.ceil(len(dataset) / batch_size)):
+    #     batch_distances = torch.cdist(
+    #         preset_embeddings[i * batch_size : (i + 1) * batch_size], audio_embeddings, p=p
+    #     )
+    #     distances.append(batch_distances)
+    # distances = torch.cat(distances, dim=0)
 
-    # iteratively get the rank of the distance matrix's diagonal entries which
-    # correspond to the rank of the prediction matching the target
-    rank_matrix = []
+    # # iteratively get the rank of the distance matrix's diagonal entries which
+    # # correspond to the rank of the prediction matching the target
+    # rank_matrix = []
+    # for i in range(math.ceil(len(dataset) / batch_size)):
+    #     batch_ranks = distances[i * batch_size : (i + 1) * batch_size].argsort(dim=-1)
+    #     rank_matrix.append(batch_ranks)
+    # rank_matrix = torch.cat(rank_matrix, dim=0)
+    # ranks = torch.empty_like(rank_matrix.diag())
+    # for preset_id, row in enumerate(rank_matrix):
+    #     ranks[preset_id] = torch.nonzero(row == preset_id).item()
+
+    # Iteratively compute the distance matrix between each pair of preset and audio embeddings
+    # in an (non-optimal) iterative way to avoid memory issues
+    # iteratively compute a slice of the distance matrix and get the according ranks
+    # (distance matrix's diagonal entries) which correspond to the rank of the prediction
+    # matching the target
+    ranks = torch.empty(len(dataset), device=device)
     for i in range(math.ceil(len(dataset) / batch_size)):
-        batch_ranks = distances[i * batch_size : (i + 1) * batch_size].argsort(dim=-1)
-        rank_matrix.append(batch_ranks)
-    rank_matrix = torch.cat(rank_matrix, dim=0)
-    ranks = torch.empty_like(rank_matrix.diag())
-    for preset_id, row in enumerate(rank_matrix):
-        ranks[preset_id] = torch.nonzero(row == preset_id).item()
+        slice_ = (
+            i * batch_size,
+            (i + 1) * batch_size if (i + 1) * batch_size < len(dataset) else len(dataset),
+        )
+        batch_distances = torch.cdist(preset_embeddings[slice_[0] : slice_[1]], audio_embeddings, p=p)
+        batch_ranks = batch_distances.argsort(dim=-1)
+        matching_preset_id = torch.arange(slice_[0], slice_[1], device=device)
+        ranks[slice_[0] : slice_[1]] = (batch_ranks == matching_preset_id.view(-1, 1)).nonzero()[:, 1]
 
     # compute the log the MRR
     mrr_score = (1 / (ranks + 1)).mean().item()
-    log.info(f"MRR score: {mrr_score:.4f}")
+    if log_results:
+        log.info(f"MRR score: {mrr_score:.4f}")
 
     # Create a dictionary in which the keys are ranks and the values are lists of
     # preset ids that ended up with that rank
@@ -137,12 +162,14 @@ def one_vs_all_eval(
 
     # compute and log the top-k MRR
     top_k_mrr = [top_k_mrr_score(ranks_dict, k=k) for k in range(1, 6)]
-    for k, mrr in enumerate(top_k_mrr):
-        log.info(f"Top-{k+1} MRR score: {mrr:.4f}")
+    if log_results:
+        for k, mrr in enumerate(top_k_mrr):
+            log.info(f"Top-{k+1} MRR score: {mrr:.4f}")
 
     # compute the L1 loss
     l1_loss = sum(losses) / len(losses)  # compute_l1(model, dataset, batch_size=batch_size)
-    log.info(f"L1 loss: {l1_loss:.4f}")  # pylint: disable=W1203
+    if log_results:
+        log.info(f"L1 loss: {l1_loss:.4f}")  # pylint: disable=W1203
 
     return mrr_score, top_k_mrr, ranks_dict, l1_loss
 
@@ -169,8 +196,10 @@ def non_overlapping_eval(
     dataset: Dataset,
     subset_size: int = -1,
     num_ranks: int = 256,
+    seed: int = 0,
     p: int = 1,
     device: str = "cpu",
+    log_results: bool = True,
 ) -> Tuple[float, float, List, Dict]:
     """
     Function computing the Mean Reciprocal Rank (MRR) metric over a given dataset.
@@ -187,9 +216,11 @@ def non_overlapping_eval(
     - `subset_size` (int): number of (shuffled) samples to be taken from the dataset. If -1 or 0 are
     provided or if subset_size > len(dataset), all samples are taken. (Default: -1)
     - `num_evals` (int): number of ranking evaluations to compute the mean from. (default: 256)
+    - `seed` (int): seed used to shuffle the dataset. (default: 0)
     - `p` (int): p value for the p-norm used to compute the distances between each prediction and
     the target in each evaluation. (Default: 1)
     - `device` (str): device to be used for evaluation. (Default: "cpu")
+    - `log_results` (bool): whether or not to log the results. (Default: True)
 
     Returns
     - MRR score as float between 0 and 1
@@ -199,10 +230,14 @@ def non_overlapping_eval(
     - L1 loss as float
     """
     if 0 < subset_size < len(dataset):
-        subset_idx = _get_rnd_non_repeating_integers(N=len(dataset), K=subset_size)
+        subset_idx = _get_rnd_non_repeating_integers(N=len(dataset), K=subset_size, seed=seed)
         dataset = Subset(dataset, subset_idx)
 
-    dataloader = DataLoader(dataset, batch_size=num_ranks, shuffle=False, num_workers=0, drop_last=True)
+    rng_loader = torch.Generator(device="cpu")
+    rng_loader.manual_seed(seed)
+    dataloader = DataLoader(
+        dataset, batch_size=num_ranks, shuffle=False, num_workers=0, drop_last=True, generator=rng_loader
+    )
 
     mrr_preds = []
     mrr_targets = None
@@ -228,17 +263,20 @@ def non_overlapping_eval(
     preds = torch.cat(mrr_preds, dim=1).view(num_eval, -1, preds_dim)
     ranks, _ = _compute_ranks(preds, targets, index=0, p=p)
     mrr_score = (1 / (ranks + 1)).mean().item()
-    log.info(f"MRR score: {mrr_score:.4f}")
+    if log_results:
+        log.info(f"MRR score: {mrr_score:.4f}")
 
     ranks_dict = _create_rank_dict(ranks)
 
     top_k_mrr = [top_k_mrr_score(ranks_dict, k=k) for k in range(1, 6)]
-    for k, mrr in enumerate(top_k_mrr):
-        log.info(f"Top-{k+1} MRR score: {mrr:.4f}")
+    if log_results:
+        for k, mrr in enumerate(top_k_mrr):
+            log.info(f"Top-{k+1} MRR score: {mrr:.4f}")
 
     # Compute L1 loss
     loss = sum(losses) / len(losses)
-    log.info(f"L1 loss: {loss:.4f}")
+    if log_results:
+        log.info(f"L1 loss: {loss:.4f}")
 
     return mrr_score, top_k_mrr, ranks_dict, loss
 
@@ -267,15 +305,17 @@ def top_k_mrr_score(ranks: Dict, k: int = 5) -> float:
     return recriprocal_rank_at_k / num_targets
 
 
-def _get_rnd_non_repeating_integers(N: int, K: int) -> List[float]:
+def _get_rnd_non_repeating_integers(N: int, K: int, seed: int = 0) -> List[float]:
     """
     Return a list of K random non-repeating integers between 0 and N.
     """
+    rng = torch.Generator(device="cpu")
+    rng.manual_seed(seed)
     assert K <= N
     arr = torch.arange(0, N)
 
     # Shuffle the array
-    arr_shuffled = arr[torch.randperm(N)]
+    arr_shuffled = arr[torch.randperm(N, generator=rng)]
 
     # Take only the first K entries
     result = arr_shuffled[:K]
