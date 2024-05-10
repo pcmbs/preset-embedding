@@ -16,10 +16,9 @@ log = logging.getLogger(__name__)
 def eval_logger(object_dict: Dict[str, Any], run: wandb.sdk.wandb_run.Run) -> None:
     """Log infos & hps related to the evaluation.
 
-    Args
-    - `object_dict`: A dictionary containing the following objects:
+    Args:
+    object_dict: A dictionary containing the following objects:
         - `"cfg"`: A DictConfig object containing the main config.
-        - `"model"`: nn.Module for the preset encoder model.
         - `"dataset_cfg"`: A DictConfig object containing the dataset config.
         - `"results"`: A dictionary containing the evaluation results.
     """
@@ -30,7 +29,6 @@ def eval_logger(object_dict: Dict[str, Any], run: wandb.sdk.wandb_run.Run) -> No
     hc_results = object_dict["results"].get("hc", {})
     rnd_nol_results = object_dict["results"].get("rnd_nol", {})
     rnd_results = object_dict["results"].get("rnd", {})
-    rnd_incr_results = object_dict["results"].get("rnd_incr", {})
 
     # General hyperparameters
     hparams["seed"] = cfg.get("seed")
@@ -101,24 +99,8 @@ def eval_logger(object_dict: Dict[str, Any], run: wandb.sdk.wandb_run.Run) -> No
             for i, result in enumerate(rnd_results["top_k_mrr"][s]):
                 metrics_dict["rnd"][f"top_{i+1}_mrr_{s}"] = result
 
-    # Results on random incremental presets
-    # TODO: check how, and if it makes sense to log rnd_incr_results
-    # rnd_incr_table = []
-    # for k, v in rnd_incr_results.items():
-    #     metrics_dict["rnd_incr"][k]["mrr"] = v["mrr"]
-    #     metrics_dict["rnd_incr"][k]["loss"] = v["loss"]
-
-    # raw_table = []
-    # for k, v in metrics_dict.items():
-    #     if k != "rnd_incr":
-    #         for kk, vv in v.items():
-    #             if kk in ["loss", "mrr"]:
-    #                 raw_table.append((k, kk, vv))
-    # columns = ["dataset", "metric", "value"]
-
     # log metrics
     run.log({"metrics": metrics_dict})  # log instead of summary to be able to create bar charts in wandb UI
-    # run.summary["grouped_metrics"] = wandb.Table(data=raw_table, columns=columns)
     wandb.config.update(hparams)
 
     # hydra config is saved under <project_name>/Runs/<run_id>/Files/.hydra

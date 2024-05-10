@@ -4,6 +4,7 @@ Wrapper class around a torchopenl3 model for integration into the current pipeli
 [1] Gyanendra Das, Humair Raj Khan, Joseph Turian (2021). torchopenl3 (version 1.0.1). 
 DOI 10.5281/zenodo.5168808, https://github.com/torchopenl3/torchopenl3.
 """
+
 import os
 from functools import partial
 
@@ -84,7 +85,9 @@ class TorchOpenL3Wrapper(nn.Module):
     def forward(self, audio: torch.Tensor) -> torch.Tensor:
         """
         Forward pass.
-        audio (torch.Tensor): mono input sounds @48khz of shape (n_sounds, n_samples, n_channels=1) in the range [-1, 1]
+
+        Args:
+            audio (torch.Tensor): mono input sounds @48khz of shape (n_sounds, n_samples, n_channels=1) in the range [-1, 1]
 
         Returns:
             torch.Tensor: audio embeddings of shape (n_sounds, embed_size, n_timestamps)

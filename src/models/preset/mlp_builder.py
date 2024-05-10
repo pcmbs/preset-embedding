@@ -27,13 +27,13 @@ class MLPBlock(nn.Module):
         """
         (Linear -> norm -> act_fn -> Dropout) * 2
 
-        Args
-        - `in_features` (int): number of input features
-        - `out_features` (int): number of output features
-        - `hidden_features` (int): number of hidden features. Set to `out_features` if not None (Default: None)
-        - `norm` (nn.Module): normalization layer. Must be nn.LayerNorm or nn.BatchNorm1d
-        - `act_fn` (nn.Module): activation function
-        - `dropout_p` (float): dropout probability
+        Args:
+            in_features (int): number of input features
+            out_features (int): number of output features
+            hidden_features (int): number of hidden features. Set to `out_features` if not None (Default: None)
+            norm (nn.Module): normalization layer. Must be nn.LayerNorm or nn.BatchNorm1d
+            act_fn (nn.Module): activation function
+            dropout_p (float): dropout probability
         """
         super().__init__()
         hidden_features = out_features if hidden_features is None else hidden_features
@@ -90,17 +90,17 @@ class ResNetBlock(nn.Module):
 
         ResNetBlock(x) = ReLU(x + residual_dropout(norm(linear(dropout(act_fn(norm(linear(x)))))))
 
-        Args
-        - `in_features` (int): number of input features
-        - `out_features` (int): number of output features.
-        If different from `in_features` the residual connection is removed,
-        such that the output is act_fn(norm(nn.Linear(x))).
-        - `norm` (nn.Module): normalization layer. Must be nn.LayerNorm or nn.BatchNorm1d
-        - `act_fn` (nn.Module): activation function
-        - `dropout_p` (float): dropout probability
-        - `residual_dropout_p` (float): dropout probability for the residual connection.
-        - `has_residual` (bool): whether to include the residual connection or not.
-        Note that the residual connection is removed if `in_features` is not equal to `out_features`.
+        Args:
+            in_features (int): number of input features
+            out_features (int): number of output features.
+            If different from `in_features` the residual connection is removed,
+            such that the output is act_fn(norm(nn.Linear(x))).
+            norm (nn.Module): normalization layer. Must be nn.LayerNorm or nn.BatchNorm1d
+            act_fn (nn.Module): activation function
+            dropout_p (float): dropout probability
+            residual_dropout_p (float): dropout probability for the residual connection.
+            has_residual (bool): whether to include the residual connection or not.
+            Note that the residual connection is removed if `in_features` is not equal to `out_features`.
         """
         super().__init__()
         self.has_residual = has_residual and in_features == out_features
@@ -164,16 +164,16 @@ class HighwayBlock(nn.Module):
 
         HighwayBlock(x) = fc(x) * gate(x) + x * (1 - gate(x))
 
-        Args
-        - `in_features` (int): number of input features
-        - `out_features` (int): number of output features.
-        If different from `in_features` the residual connection is removed,
-        such that the output is act_fn(norm(nn.Linear(x))).
-        - `norm` (nn.Module): normalization layer. Must be nn.LayerNorm or nn.BatchNorm1d
-        - `act_fn` (nn.Module): activation function
-        - `dropout_p` (float): dropout probability
-        - `has_residual` (bool): whether to include the residual connection or not.
-        Note that the residual connection is removed if `in_features` is not equal to `out_features`.
+        Args:
+            in_features (int): number of input features
+            out_features (int): number of output features.
+            If different from `in_features` the residual connection is removed,
+            such that the output is act_fn(norm(nn.Linear(x))).
+            norm (nn.Module): normalization layer. Must be nn.LayerNorm or nn.BatchNorm1d
+            act_fn (nn.Module): activation function
+            dropout_p (float): dropout probability
+            has_residual (bool): whether to include the residual connection or not.
+            Note that the residual connection is removed if `in_features` is not equal to `out_features`.
         """
         super().__init__()
         self.in_features = in_features
@@ -238,6 +238,9 @@ class MlpBuilder(nn.Module):
         block_kwargs: Optional[Dict] = None,
         embedding_kwargs: Optional[Dict] = None,
     ) -> None:
+        """
+        MLP builder class.
+        """
         super().__init__()
 
         self.embedding_layer = embedding_layer(**embedding_kwargs)
@@ -286,7 +289,7 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader, Subset
 
     from data.datasets import SynthDatasetPkl
-    from models.preset.model_zoo import mlp_oh, highway_oh, highway_ft, highway_ftgru
+    from models.preset.model_zoo import mlp_oh, hn_oh, hn_pt, hn_ptgru
     from utils.synth import PresetHelper
 
     SYNTH = "diva"
@@ -303,19 +306,19 @@ if __name__ == "__main__":
             "l": {"hidden_features": 3072},
         },
         "highway_oh": {
-            "fn": highway_oh,
+            "fn": hn_oh,
             "s": {"num_blocks": 4, "hidden_features": 512},
             "b": {"num_blocks": 6, "hidden_features": 768},
             "l": {"num_blocks": 8, "hidden_features": 1024},
         },
         "highway_ft": {
-            "fn": highway_ft,
+            "fn": hn_pt,
             "s": {"num_blocks": 4, "hidden_features": 256, "token_dim": 64},
             "b": {"num_blocks": 6, "hidden_features": 512, "token_dim": 64},
             "l": {"num_blocks": 8, "hidden_features": 768, "token_dim": 64},
         },
         "highway_ftgru": {
-            "fn": highway_ftgru,
+            "fn": hn_ptgru,
             "s": {"num_blocks": 4, "hidden_features": 512, "token_dim": 256},
             "b": {"num_blocks": 6, "hidden_features": 768, "token_dim": 384},
             "l": {"num_blocks": 8, "hidden_features": 1024, "token_dim": 512},

@@ -86,7 +86,7 @@ class GRUBuilder(nn.Module):
 
 def gru_oh(out_features: int, preset_helper: PresetHelper, **kwargs) -> nn.Module:
     """
-    Bi-GRU with One-Hot encoded categorical synthesizer parameters.
+    BiGRU with One-Hot encoded categorical synthesizer parameters.
     """
     return GRUBuilder(
         out_features=out_features,

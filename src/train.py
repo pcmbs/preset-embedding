@@ -3,12 +3,13 @@
 """
 Training script.
 Adapted from https://github.com/ashleve/lightning-hydra-template/blob/main/src/train.py
+
+See configs/train for more details.
 """
 import os
 from typing import Any, Dict, List
 
 import hydra
-from hydra.core.hydra_config import HydraConfig
 import lightning as L
 from torch import nn
 from torch.utils.data import DataLoader
@@ -31,11 +32,11 @@ def train(cfg: DictConfig) -> Dict[str, Any]:
     """
     Trains the mmodel
 
-    Args
-    - `cfg`: A DictConfig configuration composed by Hydra.
+    Args:
+        cfg (DictConfig): A DictConfig configuration composed by Hydra.
 
-    Returns
-    - A tuple with metrics and dict with all instantiated objects.
+    Returns:
+        A tuple with metrics and dict with all instantiated objects.
     """
 
     # set seed for random number generators in pytorch, numpy and python.random

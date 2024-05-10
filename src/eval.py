@@ -13,6 +13,7 @@ Usage example using hydra multirun to evaluate all models on Tal-NoiseMaker:
 """
 from pathlib import Path
 import pickle
+from typing import Dict
 
 import hydra
 from hydra.core.hydra_config import HydraConfig
@@ -34,16 +35,24 @@ from utils.synth.preset_helper import PresetHelper
 log = RankedLogger(__name__, rank_zero_only=True)
 
 
+def _log_results_to_console(results: Dict) -> None:
+    for k, v in results.items():
+        if k in ["mrr", "loss"]:
+            log.info(f"{k}: mean: {v['mean']:.5f}; std.: {v['std']:.5f}")
+        elif k == "top_k_mrr":
+            for i, _ in enumerate(v["mean"]):
+                log.info(f"mrr@{i+1}: mean: {v['mean'][i]:.5f}; std.: {v['std'][i]:.5f}")
+        else:
+            pass
+
+
 @hydra.main(version_base="1.3", config_path="../configs/eval", config_name="eval.yaml")
 def evaluate(cfg: DictConfig) -> None:
     """
     Evaluation pipeline for the preset embedding framework.
 
-    Args
-    - `cfg`: A DictConfig configuration composed by Hydra.
-
-    Return
-    TODO
+    Args:
+        cfg (DictConfig): A DictConfig configuration composed by Hydra.
     """
     device = "cuda" if torch.cuda.is_available() and cfg.device == "cuda" else "cpu"
     L.seed_everything(cfg.seed)
@@ -52,7 +61,7 @@ def evaluate(cfg: DictConfig) -> None:
     log.info(f"Instantiating hand-crafted presets Dataset: {cfg.synth.dataset_path}")
     hc_dataset = SynthDatasetPkl(cfg.synth.dataset_path)
 
-    log.info(f"Instantiating random presets Dataset: {cfg.synth.rnd_dataset_path}")
+    log.info(f"Instantiating synthetic presets Dataset: {cfg.synth.rnd_dataset_path}")
     rnd_dataset = SynthDatasetPkl(cfg.synth.rnd_dataset_path)
 
     assert hc_dataset.configs_dict["params_to_exclude"] == rnd_dataset.configs_dict["params_to_exclude"]
@@ -115,7 +124,9 @@ def evaluate(cfg: DictConfig) -> None:
         "num_hc_presets": num_hc_presets,
     }
 
-    log.info(f"Computing evaluation metrics on {cfg.subset_size} random presets (one-vs-all)...")
+    _log_results_to_console(hc_results)
+
+    log.info(f"Computing evaluation metrics on {cfg.subset_size} synthetic presets (one-vs-all)...")
     rnd_mrr = []
     rnd_loss = []
     rnd_top_k_mrr = []
@@ -144,12 +155,14 @@ def evaluate(cfg: DictConfig) -> None:
         "loss": rnd_loss,
     }
 
+    _log_results_to_console(rnd_results)
+
     rnd_incr_results = {}
     if cfg.random_incremential:
-        log.info("Computing evaluation metrics on increasing number of random presets (one-vs-all)...")
+        log.info("Computing evaluation metrics on increasing number of synthetic presets (one-vs-all)...")
         for i in range(9, int(np.log2(len(rnd_dataset))) + 1):
             num_presets = int(2**i)
-            log.info(f"{num_presets} random presets...")
+            log.info(f"{num_presets} synthetic presets...")
             mrr, _, _, loss = one_vs_all_eval(
                 model=model,
                 dataset=rnd_dataset,
@@ -161,7 +174,7 @@ def evaluate(cfg: DictConfig) -> None:
             rnd_incr_results[num_presets] = {"mrr": mrr, "loss": loss}
 
     if cfg.random_non_overlapping:
-        log.info(f"Computing evaluation metrics on {len(rnd_dataset)} random presets (non-overlapping)...")
+        log.info(f"Computing evaluation metrics on {len(rnd_dataset)} synthetic presets (non-overlapping)...")
         rnd_nol_mrr, rnd_nol_top_k_mrr, rnd_nol_ranks_dict, rnd_nol_loss = non_overlapping_eval(
             model=model, dataset=rnd_dataset, num_ranks=256, device=device, seed=cfg.seed, log_results=True
         )
@@ -173,6 +186,8 @@ def evaluate(cfg: DictConfig) -> None:
             "loss": rnd_nol_loss,
             "num_rnd_presets": len(rnd_dataset),
         }
+        _log_results_to_console(rnd_nol_results)
+
     else:
         rnd_nol_results = {}
 
@@ -201,11 +216,11 @@ def evaluate(cfg: DictConfig) -> None:
 
 
 if __name__ == "__main__":
-    import sys
+    # import sys
 
-    args = ["src/eval.py", "model=talnm_highway_ft", "~wandb"]
+    # args = ["src/eval.py", "model=talnm_highway_ft", "~wandb"]
 
-    gettrace = getattr(sys, "gettrace", None)
-    if gettrace():
-        sys.argv = args
+    # gettrace = getattr(sys, "gettrace", None)
+    # if gettrace():
+    #     sys.argv = args
     evaluate()  # pylint: disable=no-value-for-parameter

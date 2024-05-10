@@ -12,9 +12,9 @@ where <model> can be:
  - mlp_oh
  - gru_oh
  - resnet_oh
- - highway_oh
- - highway_ft
- - highway_ftgru
+ - hn_oh
+ - hn_pt
+ - hn_ptgru
  - tfm
 """
 
@@ -25,11 +25,11 @@ from torch import nn
 from utils.synth.preset_helper import PresetHelper
 
 
-def get_highway_ft(
+def get_hn_pt(
     out_features: int, preset_helper: PresetHelper, model_cfg: DictConfig, hps: DictConfig
 ) -> nn.Module:
     """
-    Return a highway_ft model instantiated with the parameters taken from (in order of precedence):
+    Return a hn_pt model instantiated with the parameters taken from (in order of precedence):
     (1): the model_cfg DictCongif (i.e., fixed hyperparameters), or
     (2): the hps DictConfig (i.e., tuned hyperparameters).
     """
@@ -47,11 +47,11 @@ def get_highway_ft(
     )
 
 
-def get_highway_ftgru(
+def get_hn_ptgru(
     out_features: int, preset_helper: PresetHelper, model_cfg: DictConfig, hps: DictConfig
 ) -> nn.Module:
     """
-    Return a highway_ftgru model instantiated with the parameters taken from (in order of precedence):
+    Return a hn_ptgru model instantiated with the parameters taken from (in order of precedence):
     (1): the model_cfg DictCongif (i.e., fixed hyperparameters), or
     (2): the hps DictConfig (i.e., tuned hyperparameters).
     """
@@ -89,11 +89,11 @@ def get_mlp_oh(
     )
 
 
-def get_highway_oh(
+def get_hn_oh(
     out_features: int, preset_helper: PresetHelper, model_cfg: DictConfig, hps: DictConfig
 ) -> nn.Module:
     """
-    Return a highway_oh model instantiated with the parameters taken from (in order of precedence):
+    Return a hn_oh model instantiated with the parameters taken from (in order of precedence):
     (1): the model_cfg DictCongif (i.e., fixed hyperparameters), or
     (2): the hps DictConfig (i.e., tuned hyperparameters).
     """

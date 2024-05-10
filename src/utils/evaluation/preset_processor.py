@@ -1,3 +1,7 @@
+"""
+Module implementing the classes used to export the hand-crafted preset datasets.
+"""
+
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -15,7 +19,7 @@ PLUGINS_FOLDER = Path(os.environ["PROJECT_ROOT"]) / "data" / "synths"
 
 class ProcessEvalPresets:
     """
-    Class used to process a dataset of hand-crafted presets stored as dictionary
+    Class used to process a dataset of hand-crafted presets stored as dictionary in a json file.
     {preset_id: {'meta': {...}, 'parameters': {'param_name': param_val}}. Calling an instance of this
     class on such a dict will return a tuple (presets, selected_presets, removed_presets)
     where:
@@ -38,21 +42,23 @@ class ProcessEvalPresets:
         path_to_plugin: Optional[str | Path] = None,
     ):
         """
-        Args
-        - `preset_helper` (PresetHelper): Instance of the PresetHelper class, containing information about
-        the parameters of a given synthesizer. It need to be the same used for training.
-        - `render_duration_in_sec` (float): Rendering duration in seconds to check for silent presets.
-        Should match the value used during training. (default: 4.0)
-        - `midi_note` (Optional[int]): Midi note used to check for silent presets.
-        Should match the value used during training. (default: 60)
-        - `midi_velocity` (Optional[int]): MIDI note velocity used to check for silent presets.
-        Should match the value used during training. (default: 110)
-        - `midi_duration_in_sec` (Optional[float]): MIDI note duration in seconds used to check for silent presets.
-        Should match the value used during training. (default: 2.0)
-        - `sample_rate` (int): Sample rate of the audio to generate. (default: 44_100)
-        - `rms_range` (Tuple[float, float]): acceptable audio RMS range. (default: (0.01, 1.0))
-        - `path_to_plugin` (Optional[str]): Path to the plugin. If None (default), it will look for it in
-        <project-folder>/data based on preset_helper.synth_name.
+        Class used to process a dataset of hand-crafted presets stored as dictionary in a json file.
+
+        Args:
+            preset_helper (PresetHelper): Instance of the PresetHelper class, containing information about
+            the parameters of a given synthesizer. It need to be the same used for training.
+            render_duration_in_sec (float): Rendering duration in seconds to check for silent presets.
+            Should match the value used during training. (default: 4.0)
+            midi_note (Optional[int]): Midi note used to check for silent presets.
+            Should match the value used during training. (default: 60)
+            midi_velocity (Optional[int]): MIDI note velocity used to check for silent presets.
+            Should match the value used during training. (default: 110)
+            midi_duration_in_sec (Optional[float]): MIDI note duration in seconds used to check for silent presets.
+            Should match the value used during training. (default: 2.0)
+            sample_rate (int): Sample rate of the audio to generate. (default: 44_100)
+            rms_range (Tuple[float, float]): acceptable audio RMS range. (default: (0.01, 1.0))
+            path_to_plugin (Optional[str]): Path to the plugin. If None (default), it will look for it in
+            <project-folder>/data based on preset_helper.synth_name.
 
         """
         self.preset_helper = preset_helper
@@ -96,13 +102,14 @@ class ProcessEvalPresets:
         Process the dict of presets. Silent and duplicates will be removed based on self.preset_helper.
         This function returns the processed presets along with dictionaries of selected and removed presets.
 
-        Args
-        - `presets_dict` (Union[str, Path]): Dict containing the hand-crafted presets.
+        Args:
+            presets_dict (Union[str, Path]): Dict containing the hand-crafted presets.
 
-        Returns
-        - `presets` (torch.Tensor): Tensor of shape (num_selected_presets, num_used_parameters) containing the modified presets
-        - `selected_presets` (Dict): Dictionary of selected presets
-        - `removed_presets` (Dict): Dictionary of removed presets
+        Returns:
+            A tuple of
+            - `presets` (torch.Tensor): Tensor of shape (num_selected_presets, num_used_parameters) containing the modified presets
+            - `selected_presets` (Dict): Dictionary of selected presets
+            - `removed_presets` (Dict): Dictionary of removed presets
         """
 
         indices_to_remove = []  # to be removed at the end

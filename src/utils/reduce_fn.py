@@ -5,81 +5,81 @@ Reduction functions.
 import torch
 
 
-def flatten(embeddings: torch.Tensor) -> torch.Tensor:
+def flatten(x: torch.Tensor) -> torch.Tensor:
     """
     Flatten the input tensor along along the batch axis.
 
-    Args
-    - `embeddings` (torch.Tensor): The input tensor to be flattened.
+    Args:
+        x (torch.Tensor): The input tensor to be flattened.
 
-    Returns
-    - `torch.Tensor`: Flattened tensor).
+    Returns:
+        the flattened torch.Tensor.
     """
-    return embeddings.flatten(start_dim=1)
+    return x.flatten(start_dim=1)
 
 
-def avg_channel_pooling(embeddings: torch.Tensor) -> torch.Tensor:
+def avg_channel_pooling(x: torch.Tensor) -> torch.Tensor:
     """
     Calculates the average pooling over the channel dimension of the input tensor.
 
-    Args
-    - `embeddings` (torch.Tensor): The input tensor.
+    Args:
+        x (torch.Tensor): The input tensor.
 
-    Returns
-    - `torch.Tensor`: The output tensor.
+    Returns:
+        Output torch.Tensor.
     """
-    return embeddings.mean(-2)
+    return x.mean(-2)
 
 
-def avg_time_pool(embeddings: torch.Tensor) -> torch.Tensor:
+def avg_time_pool(x: torch.Tensor) -> torch.Tensor:
     """
-    Compute the average pooling of the given embeddings.
+    Compute the average pooling of the input tensor.
     Note that when applied to a ViT-based model,
     this operation is equivalent to the average pooling over the patches.
 
-    Args
-    - `embeddings` (torch.Tensor): The input embeddings tensor.
+    Args:
+        x (torch.Tensor): The input x tensor.
 
     Returns:
-        `torch.Tensor: Output tensor.
+        Output torch.Tensor.
     """
-    return embeddings.mean(-1)
+    return x.mean(-1)
 
 
-def max_channel_pool(embeddings: torch.Tensor) -> torch.Tensor:
+def max_channel_pool(x: torch.Tensor) -> torch.Tensor:
     """
     Calculates the average pooling over the channel dimension of the input tensor.
 
-    Args
-    - `embeddings` (torch.Tensor): The input tensor.
+    Args:
+        x (torch.Tensor): The input tensor.
 
-    Returns
-    - `torch.Tensor`: The output tensor.
+    Returns:
+        Output torch.Tensor.
     """
-    return embeddings.amax(-2)
+    return x.amax(-2)
 
 
-def max_time_pool(embeddings: torch.Tensor) -> torch.Tensor:
+def max_time_pool(x: torch.Tensor) -> torch.Tensor:
     """
-    Compute the max pooling of the given embeddings.
+    Compute the max pooling of the input tensor.
     Note that when applied to a ViT-based model,
     this operation is equivalent to the max pooling over the patches.
 
-    Args
-    - `embeddings` (torch.Tensor): The input embeddings tensor.
+    Args:
+        x (torch.Tensor): The input x tensor.
 
     Returns:
-        `torch.Tensor: Output tensor.
+        Output torch.Tensor.
     """
-    return embeddings.amax(-1)
+    return x.amax(-1)
 
 
 if __name__ == "__main__":
-    embeddings = torch.rand((10, 128, 500))
+    x = torch.rand((10, 128, 500))
 
-    print("original:", embeddings.shape)
-    print("flatten:", flatten(embeddings).shape)
-    print("global_avg_pool_channel:", avg_channel_pooling(embeddings).shape)
-    print("global_avg_pool_time:", avg_time_pool(embeddings).shape)
-    print("global_max_pool_channel:", max_channel_pool(embeddings).shape)
-    print("global_max_pool_time:", max_time_pool(embeddings).shape)
+    print("original:", x.shape)
+    print("flatten:", flatten(x).shape)
+    print("global_avg_pool_channel:", avg_channel_pooling(x).shape)
+    print("global_avg_pool_time:", avg_time_pool(x).shape)
+    print("global_max_pool_channel:", max_channel_pool(x).shape)
+    print("global_max_pool_time:", max_time_pool(x).shape)

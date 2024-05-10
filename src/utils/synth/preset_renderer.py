@@ -100,8 +100,8 @@ class PresetRenderer:
         if self.midi_note is None:
             raise ValueError("No midi note has been set yet. Please use `set_midi_note()` first.")
 
-        # graph = [(self.synth, [])]
-        # self.engine.load_graph(graph)
+        # graph = [(self.synth, [])] # done once when initializing the class
+        # self.engine.load_graph(graph) # done once when initializing the class
         self.synth.add_midi_note(60, 0, 0, 0.01)
         self.engine.render(0.01)  # FIXME: to clear audio buffer  (for long release, delay, etc.)
         self.synth.add_midi_note(self.midi_note, self.midi_velocity, 0.01, self.midi_duration_in_sec)

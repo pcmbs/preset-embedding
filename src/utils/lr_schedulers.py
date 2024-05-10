@@ -23,19 +23,19 @@ def lin_cos_scheduler_builder(
     which can either act as a linear warmup or to keep the learning rate constant allowing for a longer
     exploration phase.
 
-    Args
-    - optimizer (torch.optim.Optimizer): the optimizer for which the LR scheduler is built
-    - total_steps (int): the total number of training steps.
-    - milestone (int): the number of steps after which the cosine LR scheduler is triggered.
-    - final_lr (float): the final learning rate of the cosine LR scheduler.
-    - linear_start_factor (float): the starting factor of the linear LR scheduler, to be multiplied with
-    the initial LR. (Default: 1)
-    - linear_end_factor (float): the ending factor of the linear LR scheduler, to be multiplied with
-    the initial LR. (Default: 1)
+    Args:
+        optimizer (torch.optim.Optimizer): the optimizer for which the LR scheduler is built
+        total_steps (int): the total number of training steps.
+        milestone (int): the number of steps after which the cosine LR scheduler is triggered.
+        final_lr (float): the final learning rate of the cosine LR scheduler.
+        linear_start_factor (float): the starting factor of the linear LR scheduler, to be multiplied with
+        the initial LR. (Default: 1)
+        linear_end_factor (float): the ending factor of the linear LR scheduler, to be multiplied with
+        the initial LR. (Default: 1)
 
-    Returns
-    - scheduler (torch.optim.lr_scheduler._LRScheduler): the LR scheduler with the linear LR scheduler as
-    a torch sequential LR scheduler.
+    Returns:
+        A torch.optim.lr_scheduler._LRScheduler LR scheduler with the linear LR scheduler as
+        a torch sequential LR scheduler.
     """
     # Build the linear LR scheduler
     linear_scheduler = S.LinearLR(
@@ -67,17 +67,17 @@ def wcrc_scheduler_builder(
     - 3) a Restart (optional),
     - 4) a Constant final learning rate.
 
-    Args
-    - `optimizer` (torch.optim.Optimizer): The optimizer for which to build the scheduler.
-    - `min_lr` (float): The minimum learning rate for the scheduler.
-    - `num_warmup_steps` (Optional[int]): The number of warmup steps. (Defaults: None).
-    - `warmup_factor` (float): The warmup factor which multiplies the initial learning rate. (Defaults: 1.0).
-    - `num_decay_steps` (int): The number of (cosine) decay steps. (Defaults: 200_000).
-    - `num_restart_steps` (Optional[int]): Mumber of steps for the second cosine decay. (Defaults: None).
-    - `restart_factor` (float): The restart factor which multiplies the initial learning rate. (Defaults: 1.0).
+    Args:
+        optimizer (torch.optim.Optimizer): The optimizer for which to build the scheduler.
+        min_lr (float): The minimum learning rate for the scheduler.
+        num_warmup_steps (Optional[int]): The number of warmup steps. (Defaults: None).
+        warmup_factor (float): The warmup factor which multiplies the initial learning rate. (Defaults: 1.0).
+        num_decay_steps (int): The number of (cosine) decay steps. (Defaults: 200_000).
+        num_restart_steps (Optional[int]): Mumber of steps for the second cosine decay. (Defaults: None).
+        restart_factor (float): The restart factor which multiplies the initial learning rate. (Defaults: 1.0).
 
-    Returns
-        S._LRScheduler: The built learning rate scheduler.
+    Returns:
+        A S._LRScheduler LR scheduler.
     """
     assert num_warmup_steps is None or num_warmup_steps >= 0
     assert num_restart_steps is None or num_restart_steps >= 0
@@ -119,13 +119,13 @@ def add_wcrc_scheduler_to_ckpt(
     ckpt_path: Union[Path, str], num_restart_steps: int, filename: str = "last_wcrc"
 ) -> None:
     """
-    Hacky function to add the Restart and Constant part of the WCRC_scheduler
+    Hack function to add the Restart and Constant part of the WCRC_scheduler
     to a lin_cos_scheduler from a Lightning checkpoint.
 
-    Args
-    - `ckpt_path` (Union[Path, str]): path to the checkpoint file
-    - `num_restart_steps` (int): number of steps for the second cosine decay.
-    - `filename` (str): filename of the new checkpoint file
+    Args:
+        ckpt_path (Union[Path, str]): path to the checkpoint file
+        num_restart_steps (int): number of steps for the second cosine decay.
+        filename (str): filename of the new checkpoint file
     """
 
     ckpt_path = Path(ckpt_path)

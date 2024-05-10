@@ -1,10 +1,14 @@
+"""
+Helper class representing the configuration of a synthesizer.
+"""
+
 from typing import List, Sequence, Tuple
 import data.synths
 
 
 class PresetHelper:
     """
-    Helper class to generate random presets for a given synthesizer.
+    Helper class representing the configuration of a synthesizer.
     """
 
     def __init__(
@@ -15,12 +19,12 @@ class PresetHelper:
         """
         Helper class to generate random presets for a given synthesizer.
 
-        Args
-        - parameters (Sequence[Union[EmptyParameter, SettingsParameter, SynthParameter]]): synthesizer parameters
-        - parameters_to_exclude (Sequence[str]): list of parameters to exclude, i.e, parameters that are kept fixed
-        during while rendering a preset and are not inputs to the preset encoder. Can be the full name or a pattern
-        that appears at the {begining, end}. In the later, the pattern must be {followed, preceded} by a "*". (default: ())
-        - synth_name (str): name of the synthesizer
+        Args:
+            parameters (Sequence[Union[EmptyParameter, SettingsParameter, SynthParameter]]): synthesizer parameters
+            parameters_to_exclude (Sequence[str]): list of parameters to exclude, i.e, parameters that are kept fixed
+            during while rendering a preset and are not inputs to the preset encoder. Can be the full name or a pattern
+            that appears at the {begining, end}. In the later, the pattern must be {followed, preceded} by a "*". (default: ())
+            synth_name (str): name of the synthesizer
         """
         if synth_name in ["talnm", "dexed", "diva"]:
             parameters = getattr(data.synths, synth_name).SYNTH_PARAMETERS
@@ -204,45 +208,86 @@ class PresetHelper:
 
 
 if __name__ == "__main__":
-    PARAMETERS_TO_EXCLUDE_STR = (
-        "main:*",
-        "vc:*",
-        "glob:*",
-        "scop:*",
-        "arp:*",
-        "rvb1:*",
-        "dly1:*",
-        "cho2:*",
-        "pha2:*",
-        "rot2:*",
-        "*keyfollow",
-        "*velocity",
-        "env1:model",
-        "env2:model",
-        "*trigger",
-        "*release_on",
-        "env1:quantise",
-        "env2:quantise",
-        "env1:curve",
-        "env2:curve",
-        "lfo1:sync",
-        "lfo2:sync",
-        "lfo1:restart",
-        "lfo2:restart",
-        "mod:rectifysource",
-        "mod:invertsource",
-        "mod:addsource*",
-        "*revision",
-        "vca:pan",
-        "vca:volume",
-        "vca:vca",
-        "vca:panmodulation",
-        "vca:panmoddepth",
-        "vca:mode",
-        "vca:offset",
-    )
+    SYNTH = "talnm"
 
-    p_helper = PresetHelper("diva", PARAMETERS_TO_EXCLUDE_STR)
+    if SYNTH == "talnm":
+        PARAMETERS_TO_EXCLUDE_STR = (
+            "master_volume",
+            "voices",
+            "lfo_1_sync",
+            "lfo_1_keytrigger",
+            "lfo_2_sync",
+            "lfo_2_keytrigger",
+            "envelope*",
+            "portamento*",
+            "pitchwheel*",
+            "delay*",
+        )
+
+    elif SYNTH == "diva":
+        PARAMETERS_TO_EXCLUDE_STR = (
+            "main:output",
+            "vcc:*",
+            "opt:*",
+            "scope1:*",
+            "clk:*",
+            "arp:*",
+            "plate1:*",
+            "delay1:*",
+            "chrs2:*",
+            "phase2:*",
+            "rtary2:*",
+            "*keyfollow",
+            "*velocity",
+            "env1:model",
+            "env2:model",
+            "*trigger",
+            "*release_on",
+            "env1:quantise",
+            "env2:quantise",
+            "env1:curve",
+            "env2:curve",
+            "lfo1:sync",
+            "lfo2:sync",
+            "lfo1:restart",
+            "lfo2:restart",
+            "mod:rectifysource",
+            "mod:invertsource",
+            "mod:addsource*",
+            "*revision",
+            "vca:pan",
+            "vca:volume",
+            "vca:vca",
+            "vca:panmodulation",
+            "vca:panmoddepth",
+            "vca:mode",
+            "vca:offset",
+        )
+
+    elif SYNTH == "dexed":
+        PARAMETERS_TO_EXCLUDE_STR = (
+            "cutoff",
+            "resonance",
+            "output",
+            "master_tune_adj",
+            "*_key_sync",
+            "middle_c",
+            "*_switch",
+            "*_break_point",
+            "*_scale_depth",
+            "*_key_scale",
+            "*_rate_scaling",
+            "*_key_velocity",
+        )
+
+    p_helper = PresetHelper(SYNTH, PARAMETERS_TO_EXCLUDE_STR)
 
     rnd_sampling_info = p_helper.grouped_used_parameters
-    print(rnd_sampling_info)
+    print(f"Total number of used parameters: {p_helper.num_used_parameters}\n")
+    print(f"Number of used numerical parameters: {len(p_helper._used_num_parameters_idx)}")
+    print(f"Number of used binary parameters: {len(p_helper._used_bin_parameters_idx)}")
+    print(f"Number of used categorical parameters: {len(p_helper._used_cat_parameters_idx)}")
+
+    print("Used parameters:")
+    for i, param in enumerate(p_helper.used_parameters):
+        print(f"{str(i) + ':':<4} {param}")

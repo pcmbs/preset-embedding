@@ -10,6 +10,7 @@ http://arxiv.org/abs/2211.04772
 
 
 """
+
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -91,7 +92,9 @@ class EfficientATWrapper(nn.Module):
     def forward(self, audio: torch.Tensor) -> torch.Tensor:
         """
         Forward pass.
-        audio (torch.Tensor): mono input sounds @32khz of shape (n_sounds, n_channels=1, n_samples) in the range [-1, 1]
+
+        Args:
+            audio (torch.Tensor): mono input sounds @32khz of shape (n_sounds, n_channels=1, n_samples) in the range [-1, 1]
 
         Returns:
             torch.Tensor: audio embeddings of shape (n_sounds, embed_size, n_timestamps)

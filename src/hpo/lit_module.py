@@ -1,5 +1,5 @@
 """
-Lightning Module for the preset embedding framework.
+Lightning Module for HPO.
 """
 
 from typing import Any, Dict, Optional, Tuple
@@ -18,7 +18,7 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 class PresetEmbeddingHPO(LightningModule):
     """
-    Lightning Module for hyperparameter optimization of the preset embedding framework.
+    Lightning Module for hyperparameter optimization of the preset encoder.
     """
 
     def __init__(

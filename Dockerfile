@@ -1,20 +1,18 @@
-# syntax=docker/dockerfile:1
-# FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime as dev 
+# syntax=docker/dockerfile:1 
 FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-runtime as dev
-# FROM pytorch/pytorch:2.2.1-cuda12.1-cudnn8-devel as dev
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
-# # avoids warnings when you go on to work with your container. 
+# Don't prompt the user 
 ENV DEBIAN_FRONTEND=noninteractive
-# disable the display in X11 to avoid MIT-SHM error (req. for dawdreamer)
+# Disable the display in X11 to avoid MIT-SHM error (req. for dawdreamer)
 ENV DISPLAY=none
-# allow CUBLAS deterministic behavior
+# Allow CUBLAS deterministic behavior
 ENV CUBLAS_WORKSPACE_CONFIG=:4096:8
 
-# required for audio plugins 
+# Required for audio plugins 
 RUN apt-get update && \
     apt-get -y --no-install-recommends install libgl1 libatomic1 libfreetype6 libasound2 libglib2.0-0 && \
     apt-get clean && \
@@ -44,17 +42,17 @@ RUN groupadd -g $GID $UNAME && \
 # Set the working directory
 WORKDIR /workspace
 
-# install third-party packages
+# Install third-party packages
 COPY --chown=$UNAME:$UNAME environment.yml .
 RUN conda env update -n base --file environment.yml
 
-# set the default user when running the image if last stage.
+# Set the default user when running the image if last stage.
 USER $UNAME
 
-# copy source code
+# Copy source code
 COPY --chown=$UNAME:$UNAME . .
 
-# install local packages
+# Install local packages
 RUN /opt/conda/bin/pip install -e .
 
 # During debugging, this entry point will be overridden.

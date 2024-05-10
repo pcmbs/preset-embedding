@@ -1,3 +1,7 @@
+"""
+Module defining the function to compute the average L1 error used for evaluation.
+"""
+
 import logging
 from typing import Union
 
@@ -12,14 +16,14 @@ def compute_l1(model: nn.Module, dataset: Union[Dataset, Subset], batch_size: in
     """
     Function computing the L1 loss using `torch.cdist` to be used for evaluation.
 
-    Args
-    - `model` (nn.Module): model to be evaluated
-    - `dataset` (Union[Dataset, Subset]): dataset used for evaluation.
-    - `batch_size` (int): number of samples to to be processed at once to avoid memory
-    issues. (Default: 512)
+    Args:
+        model (nn.Module): model to be evaluated
+        dataset (Union[Dataset, Subset]): dataset used for evaluation.
+        batch_size (int): number of samples to to be processed at once to avoid memory
+        issues. (Default: 512)
 
     Returns
-    - L1 loss as float
+        L1 loss as float
     """
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=0, drop_last=False)
 

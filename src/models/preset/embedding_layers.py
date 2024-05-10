@@ -1,6 +1,6 @@
 # pylint: disable=E1102
 """
-Module implementing embedding layers for the preset encoder.
+Module implementing different embedding layers for the preset encoder.
 """
 import math
 from typing import Optional, Tuple
@@ -17,8 +17,8 @@ class RawParameters(nn.Module):
         """
         Use raw parameter values in the range [0,1] given the category indices of categorical synth parameters.
 
-        Args
-        - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        Args:
+            preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
         """
 
         super().__init__()
@@ -70,8 +70,8 @@ class OneHotEncoding(nn.Module):
         """
         One-hot encoding of categorical parameters.
 
-        Args
-        - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        Args:
+            preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
         """
         super().__init__()
         # used numerical and binary parameters indices
@@ -113,12 +113,12 @@ class OneHotEncoding(nn.Module):
         Compute the offsets for each categorical parameter and the total number of categories
         (i.e., sum over all categorical parameters' cardinality).
 
-        Args
-        - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        Args:
+            preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
 
-        Returns
-        - `cat_offsets` (torch.Tensor): the offsets for each categorical parameter as a list cat_offsets[cat_param_idx] = offset.
-        - `total_num_cat` (int):  total number of categories.
+        Returns:
+            cat_offsets (torch.Tensor): the offsets for each categorical parameter as a list cat_offsets[cat_param_idx] = offset.
+            total_num_cat (int):  total number of categories.
         """
         cat_offsets = []
         offset = 0
@@ -135,12 +135,13 @@ class PresetTokenizer(nn.Module):
     """
     Synth Presets Tokenizer class.
 
-    - Each non-categorical (numerical & binary) parameter is embedded using a distinct linear projection.
+    - Each non-categorical (numerical & binary) parameter is embedded using a learned linear projection.
     - Each categorical parameter is embedded using a nn.Embedding lookup table.
-    """
 
-    # https://github.com/yandex-research/rtdl-revisiting-models/blob/main/bin/ft_transformer.py
-    # https://github.com/gwendal-lv/spinvae2/blob/main/model/presetmodel.py
+    Higly inspired from:
+    https://github.com/yandex-research/rtdl-revisiting-models/blob/main/bin/ft_transformer.py
+    https://github.com/gwendal-lv/spinvae2/blob/main/model/presetmodel.py
+    """
 
     def __init__(
         self,
@@ -151,13 +152,13 @@ class PresetTokenizer(nn.Module):
         pe_dropout_p: float = 0.0,
     ) -> None:
         """
-        Args
-        - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
-        - `token_dim` (int): The token embedding dimension.
-        - `cls_token` (bool): Whether to add a class token.
-        - `pe_type` (Optional[str]): The type of positional encoding. (Defaults: "absolute").
-        Pass None to not use positional encoding.
-        - `pe_dropout_p` (float): The dropout probability for the positional encoding. (Defaults: 0.0).
+        Args:
+            preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
+            token_dim (int): The token embedding dimension.
+            cls_token (bool): Whether to add a class token.
+            pe_type (Optional[str]): The type of positional encoding. Pass None to omit positional encoding.
+            (Defaults: "absolute").
+            pe_dropout_p (float): The dropout probability for the positional encoding. (Defaults: 0.0).
         """
         super().__init__()
         self._embedding_dim = token_dim
@@ -233,12 +234,12 @@ class PresetTokenizer(nn.Module):
         Compute the offsets for each categorical parameter and the total number of categories
         (i.e., sum over all categorical parameters' cardinality).
 
-        Args
-        - `preset_helper` (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        Args:
+            preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
 
-        Returns
-        - `cat_offsets` (torch.Tensor): the offsets for each categorical parameter as a list cat_offsets[cat_param_idx] = offset.
-        - `total_num_cat` (int):  total number of categories.
+        Returns:
+            cat_offsets (torch.Tensor): the offsets for each categorical parameter as a list cat_offsets[cat_param_idx] = offset.
+            total_num_cat (int):  total number of categories.
         """
         cat_offsets = []
         offset = 0
@@ -263,9 +264,9 @@ class PositionalEncoding(nn.Module):
         Adapted for batch-first inputs from https://pytorch.org/tutorials/beginner/transformer_tutorial.html
 
         Args:
-        - `embedding_dim` (int): embedding (i.e., model) dimension
-        - `dropout_p` (float): dropout probability
-        - `max_len` (int): maximum sequence length
+            embedding_dim (int): embedding (i.e., model) dimension
+            dropout_p (float): dropout probability
+            max_len (int): maximum sequence length
         """
         super().__init__()
         self.dropout = nn.Dropout(p=dropout_p)
@@ -283,8 +284,8 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Args
-        - `x` (torch.Tensor): input tensor of shape (batch_size, seq_len, embedding_dim)
+        Args:
+            x (torch.Tensor): input tensor of shape (batch_size, seq_len, embedding_dim)
         """
         x = x + self.pe[:, : x.shape[1]]
         return self.dropout(x)
@@ -292,8 +293,8 @@ class PositionalEncoding(nn.Module):
 
 class PresetTokenizerWithGRU(nn.Module):
     """
-    Preset tokenizer with GRU.
-    This module tokenize a batch of presets and then applies a bi-GRU to the output.
+    Preset tokenizer with BiGRU.
+    This module tokenize a batch of presets and then applies a BiGRU to the output.
     The output is a 2D context vector (batch_size, embedding_dim) made up of the bi-GRU's last hidden state,
     which can be used as input of a MLP based network.
     """
@@ -309,19 +310,19 @@ class PresetTokenizerWithGRU(nn.Module):
         pe_dropout_p: float = 0.0,
     ):
         """
-        Preset tokenizer with GRU.
-        This module tokenize a batch of presets and then applies a bi-GRU to the output.
+        Preset tokenizer with BiGRU.
+        This module tokenize a batch of presets and then applies a BiGRU to the output.
         The output is a 2D context vector (batch_size, embedding_dim) made up of the bi-GRU's last hidden state,
         which can be used as input of a MLP based network as alternative to flattening the sequence of tokens.
 
         Args:
-        - `preset_helper` (PresetHelper): preset helper
-        - `token_dim` (int): token dimension
-        - `pre_norm` (bool): whether to apply layer normalization on the token, before GRU.
-        - `gru_hidden_factor` (int): bi-GRU hidden factor as a multiple of `token_dim`
-        - `gru_num_layers` (int): number of GRU layers
-        - `gru_dropout_p` (float): GRU dropout probability
-        - `pe_dropout_p` (float): positional encoding dropout probability
+            preset_helper (PresetHelper): preset helper
+            token_dim (int): token dimension
+            pre_norm (bool): whether to apply layer normalization on tokens, before the BiGRU.
+            gru_hidden_factor (int): BiGRU hidden factor as a multiple of token_dim
+            gru_num_layers (int): number of GRU layers
+            gru_dropout_p (float): BiGRU dropout probability
+            pe_dropout_p (float): positional encoding dropout probability
         """
         super().__init__()
         self._embedding_dim = gru_hidden_factor * token_dim
@@ -368,14 +369,14 @@ class PresetTokenizerWithGRU(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Args
-        - `x` (torch.Tensor): input tensor of shape (batch_size, seq_len)
+        Args:
+            x (torch.Tensor): input tensor of shape (batch_size, seq_len)
         """
         n = x.shape[0]  # batch size
         x = self.tokenizer(x)
         x = self.pre_norm(x)
         _, x = self.gru(x)
-        # get bi-GRU last layer's last hidden state and reshape
+        # get BiGRU last layer's last hidden state and reshape
         x = x[-2:].transpose(0, 1).reshape(n, -1)
         return x
 

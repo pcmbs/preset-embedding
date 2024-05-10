@@ -1,4 +1,5 @@
 """
+Mel only model
 """
 
 import torch
@@ -91,7 +92,9 @@ class MelModel(nn.Module):
     def forward(self, audio: torch.Tensor) -> torch.Tensor:
         """
         Forward pass.
-        audio (torch.Tensor): mono input sounds @44,1khz of shape (n_sounds, n_channels=1, n_samples) in the range [-1, 1].
+
+        Args:
+            audio (torch.Tensor): mono input sounds @44,1khz of shape (n_sounds, n_channels=1, n_samples) in the range [-1, 1].
 
         Returns:
             torch.Tensor: audio embeddings of shape (n_sounds, n_mels)

@@ -1,3 +1,15 @@
+"""
+Script containing the constructors for all preset encoders, which includes:
+- mlp_raw (not used)
+- mlp_oh
+- hn_oh
+- rn_oh (not used)
+- hn_pt
+- hn_ptgru
+- gru_oh (not used)
+- tfm 
+"""
+
 from torch import nn
 
 from models.preset.embedding_layers import (
@@ -11,7 +23,6 @@ from models.preset.mlp_builder import MlpBuilder, MLPBlock, HighwayBlock, ResNet
 from models.preset.tfm_builder import TfmBuilder
 from utils.synth import PresetHelper
 
-# TODO: Documentation
 # TODO: Add support to load weights from a checkpoint (will need to extract them from lightning ckpt first)
 
 
@@ -29,6 +40,18 @@ def mlp_raw(
 ) -> nn.Module:
     """
     MLP with BatchNorm+ReLU blocks (by default) and raw parameter values in range [0,1].
+
+    Args:
+        out_features (int): number of output features. Should be the same as the used audio model.
+        preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        num_blocks (int): Number of blocks in the network. (Default: 1).
+        hidden_features (int): Hidden dimension per block. (Default: 2048).
+        block_norm (str): Normalization layer type. (Default: 'BatchNorm1d').
+        block_act_fn (str): Activation function. (Default: 'ReLU').
+        block_dropout_p (float): Dropout probability. (Default: 0.0).
+
+    Returns:
+        nn.Module`: A Pytorch module representing the constructed preset encoder.
     """
     return MlpBuilder(
         out_features=out_features,
@@ -51,7 +74,19 @@ def mlp_oh(
     block_dropout_p: float = 0.0,
 ) -> nn.Module:
     """
-    MLP with One-Hot encoded categorical synthesizer parameters.
+    MLP taking one-hot encoded categorical synthesizer parameters as input.
+
+    Args:
+        out_features (int): number of output features. Should be the same as the used audio model.
+        preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        num_blocks (int): Number of blocks in the network. (Default: 1).
+        hidden_features (int): Hidden dimension per block. (Default: 2048).
+        block_norm (str): Normalization layer type. (Default: 'BatchNorm1d').
+        block_act_fn (str): Activation function. (Default: 'ReLU').
+        block_dropout_p (float): Dropout probability. (Default: 0.0).
+
+    Returns:
+        nn.Module`: A Pytorch module representing the constructed preset encoder.
     """
     return MlpBuilder(
         out_features=out_features,
@@ -64,7 +99,7 @@ def mlp_oh(
     )
 
 
-def highway_oh(
+def hn_oh(
     out_features: int,
     preset_helper: PresetHelper,
     num_blocks: int = 6,
@@ -74,7 +109,19 @@ def highway_oh(
     block_dropout_p: float = 0.0,
 ) -> nn.Module:
     """
-    Highway MLP and One-Hot encoded categorical synthesizer parameters.
+    MLP-based HighwayNet taking one-hot encoded categorical synthesizer parameters as input.
+
+    Args:
+        out_features (int): number of output features. Should be the same as the used audio model.
+        preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        num_blocks (int): Number of blocks in the network. (Default: 6).
+        hidden_features (int): Hidden dimension per block. (Default: 768).
+        block_norm (str): Normalization layer type. (Default: 'BatchNorm1d').
+        block_act_fn (str): Activation function. (Default: 'ReLU').
+        block_dropout_p (float): Dropout probability. (Default: 0.0).
+
+    Returns:
+        nn.Module`: A Pytorch module representing the constructed preset encoder.
     """
 
     return MlpBuilder(
@@ -88,7 +135,7 @@ def highway_oh(
     )
 
 
-def resnet_oh(
+def rn_oh(
     out_features: int,
     preset_helper: PresetHelper,
     num_blocks: int = 4,
@@ -99,7 +146,20 @@ def resnet_oh(
     block_residual_dropout_p: float = 0.0,
 ) -> nn.Module:
     """
-    ResNet with One-Hot encoded categorical synthesizer parameters.
+    ResNet taking one-hot encoded categorical synthesizer parameters as input.
+
+    Args:
+        out_features (int): number of output features. Should be the same as the used audio model.
+        preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        num_blocks (int): Number of blocks in the network. (Default: 4).
+        hidden_features (int): Hidden dimension per block. (Default: 256).
+        block_norm (str): Normalization layer type. (Default: 'BatchNorm1d').
+        block_act_fn (str): Activation function. (Default: 'ReLU').
+        block_dropout_p (float): Dropout probability. (Default: 0.0).
+        block_residual_dropout_p (float): Dropout probability for residuals. (Default: 0.0).
+
+    Returns:
+        nn.Module`: A Pytorch module representing the constructed preset encoder.
     """
 
     return MlpBuilder(
@@ -118,7 +178,7 @@ def resnet_oh(
     )
 
 
-def highway_ft(
+def hn_pt(
     out_features: int,
     preset_helper: PresetHelper,
     num_blocks: int = 6,
@@ -130,7 +190,21 @@ def highway_ft(
     block_dropout_p: float = 0.0,
 ) -> nn.Module:
     """
-    Highway MLP with flattened features tokenization embedding.
+    MLP-based HighwayNet taking a flattened sequence of tokenized synthesizer parameter as input.
+
+    Args:
+        out_features (int): number of output features. Should be the same as the used audio model.
+        preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        num_blocks (int): Number of blocks in the network. (Default: 6).
+        hidden_features (int): Hidden dimension per block. (Default: 512).
+        token_dim (int): Dimension of each token. (Default: 64).
+        pe_dropout_p (float): Dropout probability for positional encoding. (Default: 0.0).
+        block_norm (str): Normalization layer type. (Default: 'BatchNorm1d').
+        block_act_fn (str): Activation function. (Default: 'ReLU').
+        block_dropout_p (float): Dropout probability. (Default: 0.0).
+
+    Returns:
+        nn.Module`: A Pytorch module representing the constructed preset encoder.
     """
 
     return MlpBuilder(
@@ -150,7 +224,7 @@ def highway_ft(
     )
 
 
-def highway_ftgru(
+def hn_ptgru(
     out_features: int,
     preset_helper: PresetHelper,
     num_blocks: int = 6,
@@ -166,7 +240,25 @@ def highway_ftgru(
     pre_norm: bool = False,
 ) -> nn.Module:
     """
-    Highway MLP with PresetTokenizer+GRU embedding.
+    MLP-based HighwayNet with PresetTokenizer+BiGRU preset encoding.
+
+    Args:
+        out_features (int): number of output features. Should be the same as the used audio model.
+        preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        num_blocks (int): Number of blocks in the network. (Default: 6).
+        hidden_features (int): Hidden dimension per block. (Default: 768).
+        token_dim (int): Dimension of each token. (Default: 384).
+        pe_dropout_p (float): Dropout probability for positional encoding. (Default: 0.0).
+        gru_hidden_factor (float): BiGRU hidden factor as a multiple of `token_dim`. (Default: 1.0).
+        gru_num_layers (int): Number of BiGRU layers. (Default: 1).
+        gru_dropout_p (float): Dropout probability for BiGRU. (Default: 0.0).
+        block_norm (str): Normalization layer type. (Default: 'BatchNorm1d').
+        block_act_fn (str): Activation function. (Default: 'ReLU').
+        block_dropout_p (float): Dropout probability. (Default: 0.0).
+        pre_norm (bool): Whether to apply layer normalization on tokens, before the BiGRU. (Default: False).
+
+    Returns:
+        nn.Module`: A Pytorch module representing the constructed preset encoder.
     """
     return MlpBuilder(
         out_features=out_features,
@@ -198,7 +290,17 @@ def gru_oh(
     dropout_p: float = 0.0,
 ) -> nn.Module:
     """
-    Bi-GRU with One-Hot encoded categorical synthesizer parameters.
+    BiGRU taking one-hot encoded categorical synthesizer parameters as input.
+
+    Args:
+        out_features (int): number of output features. Should be the same as the used audio model.
+        preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        num_layers (int): Number of BiGRU layers. (Default: 1).
+        hidden_features (int): Hidden dimension per layer (each GRU gets //2). (Default: 1024).
+        dropout_p (float): Dropout probability. (Default: 0.0).
+
+    Returns:
+        nn.Module`: A Pytorch module representing the constructed preset encoder.
     """
     return GRUBuilder(
         out_features=out_features,
@@ -227,7 +329,29 @@ def tfm(
     block_activation: str = "relu",
     block_dropout_p: float = 0.0,
 ) -> nn.Module:
-    """ """
+    """
+    Vanilla Transformer taking a sequence of tokenized synthesizer parameters as input.
+
+    Args:
+        out_features (int): number of output features. Should be the same as the used audio model.
+        preset_helper (PresetHelper): An instance of PresetHelper for a given synthesizer.
+        pe_type (str): Type of positional encoding to use. Only implemented for 'absolute' for now. (Default: 'absolute').
+        num_blocks (int): Number of transformer blocks. (Default: 6).
+        hidden_features (int): Hidden dimension per layer. (Default: 256).
+        num_heads (int): Number of attention heads. (Default: 8).
+        mlp_factor (float): Factor by which to multiply the hidden dimension in the MLP. (Default: 4.0).
+        pooling_type (str): Pooling type to use. Can either be 'cls' or 'avg'. If 'cls' is passed then the a special token
+        in prepended to the sequence of tokens and will be used as the final representation (hence no pooling occurs).
+        If 'avg'is passed, no special token is added, and the final representation is the average across the output tokens
+        (Default: 'cls').
+        last_activation (str): Activation function to use is the projection head. (Default: 'ReLU').
+        pe_dropout_p (float): Dropout probability for the positional encoding. (Default: 0.0).
+        block_activation (str): Activation function to use in the transformer blocks. (Default: 'relu').
+        block_dropout_p (float): Dropout probability for the transformer blocks. (Default: 0.0).
+
+    Returns:
+        nn.Module`: A Pytorch module representing the constructed preset encoder.
+    """
     return TfmBuilder(
         out_features=out_features,
         tokenizer=PresetTokenizer,
@@ -244,5 +368,40 @@ def tfm(
 
 
 if __name__ == "__main__":
+    import os
+    import sys
+    from pathlib import Path
 
-    print("")
+    from dotenv import load_dotenv
+    from omegaconf import OmegaConf
+
+    from models import audio as audio_models
+
+    load_dotenv()
+    PROJECT_ROOT = Path(os.environ["PROJECT_ROOT"])
+
+    SYNTH = "diva"
+
+    MODEL = "mlp_oh"
+    AUDIO_FE = "mn04"
+
+    CONF = {
+        "hn_pt": {"num_blocks": 6, "hidden_features": 512, "token_dim": 64},
+        "hn_ptgru": {"num_blocks": 6, "hidden_features": 768, "token_dim": 384},
+        "hn_oh": {"num_blocks": 6, "hidden_features": 768},
+        "mlp_oh": {"num_blocks": 1, "hidden_features": 2048},
+        "tfm": {"num_blocks": 6, "hidden_features": 256, "num_heads": 8, "mlp_factor": 4.0},
+    }
+
+    synth_cfg = OmegaConf.load(PROJECT_ROOT / "configs" / "export" / "synth" / f"{SYNTH}.yaml")[
+        "parameters_to_exclude_str"
+    ]
+
+    p_helper = PresetHelper(SYNTH, synth_cfg)
+
+    model = getattr(sys.modules[__name__], MODEL)(
+        out_features=getattr(audio_models, AUDIO_FE)().out_features, preset_helper=p_helper, **CONF[MODEL]
+    )
+    print(f"\nNumber of model parameters: {model.num_parameters}")
+    print(f"\nNumber of used synthesizer parameters: {p_helper.num_used_parameters}\n")
+    print(model)

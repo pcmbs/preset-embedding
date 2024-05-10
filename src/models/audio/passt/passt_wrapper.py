@@ -19,6 +19,7 @@ Wrapper class around PaSST models for integration into the current pipeline.
 stripped down version of the PaSST repo available at
 https://github.com/kkoutini/passt_hear21/tree/main
 """
+
 import os
 from dotenv import load_dotenv
 import torch
@@ -33,7 +34,7 @@ torch.hub.set_dir(os.environ["PROJECT_ROOT"])  # path to download/load checkpoin
 # We use mono audio with a sampling rate of 32 kHz.
 # We extract Mel features from a window of 25 ms with a hop length of 10 ms, resulting in 128 mel band
 
-# default model seems to be `passt_s_swa_p16_128_ap476` meaning a passt model with:
+# default model seems to be passt_s_swa_p16_128_ap476` meaning a passt model with:
 # s means small
 # swa means stochastic weight averaging
 # p16 mean patch size is 16x16
@@ -67,14 +68,14 @@ class PasstWrapper(nn.Module):
         (see below)
 
         Args
-        - `features` (str): determine which features will be concatenated in the final embedding.
-        "base" output from base model, "base2level" concatenation of the output from base model and the output of the same model with
-        timestamp_window * 5base2level model, "base2levelmel" same as base2lvl but also concatenates the flattened mel spectrogram
-        - `arch` (str): pretrained model.
-        See list at https://github.com/kkoutini/passt_hear21/blob/48610e7baaf913298906fcde0ca3c28d0b8277c7/hear21passt/models/passt.py#L868
-        - `mode` (str): determines which embeddings to use. "embed_only" (transformer encoder output only, embedding size = 768),
-        "logits" (classification head's logits only, embedding size = 527), "all" (concatenation of both, embedding size = 1295).
-        - `reduction` (str): determines which reduction to use (see utils.reduce_fn).
+            features (str): determine which features will be concatenated in the final embedding.
+            "base" output from base model, "base2level" concatenation of the output from base model and the output of the same model with
+            timestamp_window * 5base2level model, "base2levelmel" same as base2lvl but also concatenates the flattened mel spectrogram
+            arch (str): pretrained model.
+            See list at https://github.com/kkoutini/passt_hear21/blob/48610e7baaf913298906fcde0ca3c28d0b8277c7/hear21passt/models/passt.py#L868
+            mode (str): determines which embeddings to use. "embed_only" (transformer encoder output only, embedding size = 768),
+            "logits" (classification head's logits only, embedding size = 527), "all" (concatenation of both, embedding size = 1295).
+            reduction (str): determines which reduction to use (see utils.reduce_fn).
         """
         super().__init__()
         self.arch = arch
@@ -132,7 +133,9 @@ class PasstWrapper(nn.Module):
     def forward(self, audio: torch.Tensor) -> torch.Tensor:
         """
         Forward pass.
-        audio (torch.Tensor): mono input sounds @32khz of shape (n_sounds, n_channels=1, n_samples) in the range [-1, 1]
+
+        Args:
+            audio (torch.Tensor): mono input sounds @32khz of shape (n_sounds, n_channels=1, n_samples) in the range [-1, 1]
 
         Returns:
             torch.Tensor: audio embeddings of shape (n_sounds, embed_size=768, n_timestamps) where n_timestamps

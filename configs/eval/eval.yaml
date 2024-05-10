@@ -1,5 +1,8 @@
 # @package _global_
 
+# Config file for the evaluation procedure.
+# Associated code can be found in src/eval.py
+
 defaults:
   - _self_
   - synth: ???
@@ -35,7 +38,7 @@ tags:
   - ${synth.name}
   - ${model.type}
 
-ckpt_path: ${paths.ckpt_dir}/final/${model.ckpt_name}
+ckpt_path: ${paths.ckpt_dir}/${model.ckpt_name}
 
 # seed for random number generators in pytorch, numpy and python.random
 seed: 42

@@ -1,5 +1,5 @@
 """
-Lightning Module for the preset embedding framework.
+Lightning Module for training the preset encoder.
 """
 
 from typing import Any, Dict, Optional, Tuple
@@ -18,7 +18,7 @@ log = RankedLogger(__name__, rank_zero_only=True)
 
 class PresetEmbeddingLitModule(LightningModule):
     """
-    Lightning Module for the preset embedding framework.
+    Lightning Module for training the preset encoder.
     """
 
     def __init__(

@@ -1,4 +1,7 @@
 # pylint: disable=W1203:logging-fstring-interpolation
+"""
+Module for the computing the Mean Reciprocal Rank (MRR) metric used for validation and evaluation.
+"""
 import math
 import logging
 from typing import Dict, List, Tuple, Union
@@ -15,18 +18,18 @@ def compute_mrr(preds: torch.Tensor, targets: torch.Tensor, index: int = 0, p: i
     """
     Function computing the Mean Reciprocal Rank (MRR) metric using `torch.cdist`.
 
-    Args
-    - `preds` (torch.Tensor): predictions of shape (num_eval, num_preds_per_eval, preds_dim),
-    where num_eval corresponds to the number reciprocal ranks to be computed, num_preds_per_eval corresponds
-    to the number of predictions per per evaluation, and preds_dim is the dimension of the predictions
-    - `targets` (torch.Tensor): target of shape (num_eval, 1, preds_dim). Note that targets.shape[1] should
-    be 1 since there is a single target per evaluation.
-    - `index` (int): index of the prediction to be considered as the target in each evaluation. (default: 0)
-    - `p` (int): p value for the p-norm used to compute the distances between each prediction and the target
-    in each evaluation. (default: 1)
-    Returns
-    - MRR score as float between 0 and 1
+    Args:
+        preds (torch.Tensor): predictions of shape (num_eval, num_preds_per_eval, preds_dim),
+        where num_eval corresponds to the number reciprocal ranks to be computed, num_preds_per_eval corresponds
+        to the number of predictions per per evaluation, and preds_dim is the dimension of the predictions
+        targets (torch.Tensor): target of shape (num_eval, 1, preds_dim). Note that targets.shape[1] should
+        be 1 since there is a single target per evaluation.
+        index (int): index of the prediction to be considered as the target in each evaluation. (default: 0)
+        p (int): p value for the p-norm used to compute the distances between each prediction and the target
+        in each evaluation. (default: 1)
 
+    Returns:
+        MRR score as float between 0 and 1
     """
     ranks, _ = _compute_ranks(preds, targets, index=index, p=p)
     return (1 / (ranks + 1)).mean().item()
@@ -65,26 +68,27 @@ def one_vs_all_eval(
     Function computing the Mean Reciprocal Rank (MRR) of each samples in the dataset against all other
     samples. It additionally compute the average L1 loss of each preset and audio embeddings.
 
-    Args
-    - `model` (nn.Module): model to be evaluated
-    - `dataset` (Union[Dataset, Subset]): dataset used for evaluation.
-    - `subset_size` (int): number of (shuffled) samples to be taken from the dataset. If -1 or 0 are
-    provided or if subset_size > len(dataset), all samples are taken. (Default: -1)
-    - `seed` (int): seed for the RNG. (default: 0)
-    - `p` (int): p value for the p-norm used to compute the distances between each prediction and
-    the target in each evaluation. (default: 1)
-    - `batch_size` (int): number of samples to to be processed at once to avoid memory issues for
-    large datasets. This includes: computing the preset embeddings, computing the pairwise distances,
-    and retrieving the rank of the prediciton matching the target. (default: 512)
-    - `device` (str): device on which the model will be evaluated. (default: "cpu")
-    - log_results (bool): whether or not to log the results. (default: True)
+    Args:
+        model (nn.Module): model to be evaluated
+        dataset (Union[Dataset, Subset]): dataset used for evaluation.
+        subset_size (int): number of (shuffled) samples to be taken from the dataset. If -1 or 0 are
+        provided or if subset_size > len(dataset), all samples are taken. (Default: -1)
+        seed (int): seed for the RNG. (default: 0)
+        p (int): p value for the p-norm used to compute the distances between each prediction and
+        the target in each evaluation. (default: 1)
+        batch_size (int): number of samples to to be processed at once to avoid memory issues for
+        large datasets. This includes: computing the preset embeddings, computing the pairwise distances,
+        and retrieving the rank of the prediciton matching the target. (default: 512)
+        device (str): device on which the model will be evaluated. (default: "cpu")
+        log_results (bool): whether or not to log the results. (default: True)
 
-    Returns
-    - MRR score as float between 0 and 1
-    - a list containig the top-k MRR for k=1, 2, ..., 5
-    - a dictionary {rank: [preset_ids]} where each key is a rank and each
-    value is a list of preset ids that ended up with that rank
-    - L1 loss as float
+    Returns:
+        A tuple containing:
+        - MRR score as float between 0 and 1
+        - a list containig the top-k MRR for k=1, 2, ..., 5
+        - a dictionary {rank: [preset_ids]} where each key is a rank and each value is a list of
+        preset ids that ended up with that rank
+        - L1 loss as float
     """
     if 0 < subset_size < len(dataset):
         subset_idx = _get_rnd_non_repeating_integers(N=len(dataset), K=subset_size, seed=seed)
@@ -114,29 +118,6 @@ def one_vs_all_eval(
     audio_embeddings = torch.cat(audio_embeddings, dim=0)
     preset_embeddings = torch.cat(preset_embeddings, dim=0)
 
-    # # compute the distance matrix between each pair of preset and audio embeddings
-    # # in an (non-optimal) iterative way to avoid memory issues
-    # distances = []
-    # for i in range(math.ceil(len(dataset) / batch_size)):
-    #     batch_distances = torch.cdist(
-    #         preset_embeddings[i * batch_size : (i + 1) * batch_size], audio_embeddings, p=p
-    #     )
-    #     distances.append(batch_distances)
-    # distances = torch.cat(distances, dim=0)
-
-    # # iteratively get the rank of the distance matrix's diagonal entries which
-    # # correspond to the rank of the prediction matching the target
-    # rank_matrix = []
-    # for i in range(math.ceil(len(dataset) / batch_size)):
-    #     batch_ranks = distances[i * batch_size : (i + 1) * batch_size].argsort(dim=-1)
-    #     rank_matrix.append(batch_ranks)
-    # rank_matrix = torch.cat(rank_matrix, dim=0)
-    # ranks = torch.empty_like(rank_matrix.diag())
-    # for preset_id, row in enumerate(rank_matrix):
-    #     ranks[preset_id] = torch.nonzero(row == preset_id).item()
-
-    # Iteratively compute the distance matrix between each pair of preset and audio embeddings
-    # in an (non-optimal) iterative way to avoid memory issues
     # iteratively compute a slice of the distance matrix and get the according ranks
     # (distance matrix's diagonal entries) which correspond to the rank of the prediction
     # matching the target
@@ -177,7 +158,7 @@ def one_vs_all_eval(
 def _create_rank_dict(ranks: torch.Tensor) -> Dict:
     """
     Create a dictionary in which the keys are ranks and the values are lists of
-    preset ids that ended up with that rank
+    preset ids that ended up with that rank.
     """
     ranks_dict = {}
     for i, rank in enumerate(ranks):
@@ -209,25 +190,26 @@ def non_overlapping_eval(
     evaluations, each containing 1 target amongst 512 candidates.
     It additionally compute the average L1 loss of each preset and audio embeddings.
 
-    Args
-    - `model` (nn.Module): model to be evaluated
-    - `dataset` (Dataset): dataset used for evaluation. Note that the first batch taken from this
-    dataset will be used as targets in each evaluation
-    - `subset_size` (int): number of (shuffled) samples to be taken from the dataset. If -1 or 0 are
-    provided or if subset_size > len(dataset), all samples are taken. (Default: -1)
-    - `num_evals` (int): number of ranking evaluations to compute the mean from. (default: 256)
-    - `seed` (int): seed used to shuffle the dataset. (default: 0)
-    - `p` (int): p value for the p-norm used to compute the distances between each prediction and
-    the target in each evaluation. (Default: 1)
-    - `device` (str): device to be used for evaluation. (Default: "cpu")
-    - `log_results` (bool): whether or not to log the results. (Default: True)
+    Args:
+        model (nn.Module): model to be evaluated
+        dataset (Dataset): dataset used for evaluation. Note that the first batch taken from this
+        dataset will be used as targets in each evaluation
+        subset_size (int): number of (shuffled) samples to be taken from the dataset. If -1 or 0 are
+        provided or if subset_size > len(dataset), all samples are taken. (Default: -1)
+        num_evals (int): number of ranking evaluations to compute the mean from. (default: 256)
+        seed (int): seed used to shuffle the dataset. (default: 0)
+        p (int): p value for the p-norm used to compute the distances between each prediction and
+        the target in each evaluation. (Default: 1)
+        device (str): device to be used for evaluation. (Default: "cpu")
+        log_results (bool): whether or not to log the results. (Default: True)
 
-    Returns
-    - MRR score as float between 0 and 1
-    - a list containig the top-k MRR for k=1, 2, ..., 5
-    - a dictionary {rank: [preset_ids]} where each key is a rank and each
-    value is a list of preset ids that ended up with that rank
-    - L1 loss as float
+    Returns:
+        A tuple containing:
+        - MRR score as float between 0 and 1
+        - a list containig the top-k MRR for k=1, 2, ..., 5
+        - a dictionary {rank: [preset_ids]} where each key is a rank and each
+        value is a list of preset ids that ended up with that rank
+        - L1 loss as float
     """
     if 0 < subset_size < len(dataset):
         subset_idx = _get_rnd_non_repeating_integers(N=len(dataset), K=subset_size, seed=seed)
@@ -286,12 +268,12 @@ def top_k_mrr_score(ranks: Dict, k: int = 5) -> float:
     Calculate the top-k Mean Reciprocal Rank (MRR) score for the given ranks.
     If a target has no matches in the top-k ranks, it will be assigned a score of 0.
 
-    Args
-    - `ranks` (Dict): A dictionary containing ranks for different targets.
-    - `k` (int): An integer representing the top 'k' ranks to consider (Default: 5).
+    Args:
+        ranks (Dict): A dictionary containing ranks for different targets.
+        k (int): An integer representing the top 'k' ranks to consider (Default: 5).
 
-    Returns
-    - A float representing the mean reciprocal rank score.
+    Returns:
+        A float representing the mean reciprocal rank score.
     """
     # get the total number of targets, i.e., number of ranking evaluation
     num_targets = sum(len(val) for val in ranks.values())

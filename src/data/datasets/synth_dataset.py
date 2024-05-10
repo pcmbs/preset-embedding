@@ -12,6 +12,9 @@ load_dotenv()  # take environment variables from .env
 class SynthDataset(Dataset):
     """
     Map-style dataset for generating random presets for a given syntheiszer using DawDreamer for rendering.
+
+    Attributes
+
     """
 
     MAX_SEED_VALUE = 2**64 - 1  # 18_446_744_073_709_551_615
@@ -31,31 +34,42 @@ class SynthDataset(Dataset):
         path_to_plugin: Optional[str | Path] = None,
     ):
         """
+        Initialize a map-style dataset for generating random presets for a given syntheiszer using DawDreamer for rendering.
+
         Args
-        - `preset_helper` (PresetHelper): Instance of the PresetHelper class, containing information about
-        the parameters of a given synthesizer. This is used to generate random presets.
-        - `dataset_size` (int): Total number of data samples that will be generated in an epoch.
-        Can be set to a really big number for iterative training. In that case, the DataLoader's shuffle
-        parameter must be set to False in order to use a SequentialSampler instead of a RandomSampler
-        which could cause OOM errors due to the torch.randperm(dataset_size) call, since e.g., a dataset
-        size of 10M will require 80MB of RAM, while a dataset size of 100M will require 800MB of RAM.
-        Note that setting dataset_size!=100B will make the retrieved index to always be -1 since getting the
-        index of the last sampled data is not useful in epoch-based training based on a RandomSampler
-        (default: 100_000)
-        - `seed_offset` (int): Positive offset (multiplied by 10B) to be added to the RNG seed which
-        corresponds to the first data sample's index, since the global training step (+ this offset)
-        is used to set the RNG seed for each data point. This allows to generate 184_467_440 unique
-        sequences of 100B presets each. (default: 0)
-        - `sample_rate` (int): Sample rate of the audio to generate. (default: 44_100)
-        - `render_duration_in_sec` (float): Rendering duration in seconds. (default: 4.0)
-        - `midi_note` (Optional[int]): Midi note use to generate all data sample. (default: 60)
-        - `midi_velocity` (Optional[int]): MIDI note velocity to generate all data sample. (default: 110)
-        - `midi_duration_in_sec` (Optional[float]): MIDI note duration in seconds to generate all data sample.
-        (default: 2.0)
-        - `rms_range` (Tuple[float, float]): acceptable audio RMS range. If a generated audio is out of this
-        range, a new preset will be generated. (default: (0.01, 1.0))
-        - `path_to_plugin` (Optional[str]): Path to the plugin. If None (default), it will look for it in
-        <project-folder>/data based on preset_helper.synth_name.
+            preset_helper (PresetHelper):
+                Instance of the PresetHelper class, containing information about
+                the parameters of a given synthesizer. This is used to generate random presets.
+            dataset_size (int):
+                Total number of data samples that will be generated in an epoch.
+                Can be set to a really big number for iterative training. In that case, the DataLoader's shuffle
+                parameter must be set to False in order to use a SequentialSampler instead of a RandomSampler
+                which could cause OOM errors due to the torch.randperm(dataset_size) call, since e.g., a dataset
+                size of 10M will require 80MB of RAM, while a dataset size of 100M will require 800MB of RAM.
+                Note that setting dataset_size!=100B will make the retrieved index to always be -1 since getting the
+                index of the last sampled data is not useful in epoch-based training based on a RandomSampler
+                (Default: 100_000)
+            seed_offset (int):
+                Positive offset (multiplied by 10B) to be added to the RNG seed which
+                corresponds to the first data sample's index, since the global training step (+ this offset)
+                is used to set the RNG seed for each data point. This allows to generate 184_467_440 unique
+                sequences of 100B presets each. (Default: 0)
+            sample_rate (int):
+                Sample rate of the audio to generate. (Default: 44_100)
+            render_duration_in_sec (float):
+                Rendering duration in seconds. (Default: 4.0)
+            midi_note (Optional[int]):
+                Midi note use to generate all data sample. (Default: 60)
+            midi_velocity (Optional[int]):
+                MIDI note velocity to generate all data sample. (Default: 110)
+            midi_duration_in_sec (Optional[float]):
+                MIDI note duration in seconds to generate all data sample. (Default: 2.0)
+            rms_range (Tuple[float, float]):
+                Acceptable audio RMS range. If a generated audio is out of this range, a new preset will be
+                generated. (Default: (0.01, 1.0))
+            path_to_plugin (Optional[str]):
+                Path to the plugin. If None (Default), it will look for it in
+                <project-folder>/data based on preset_helper.synth_name.
 
         """
         self.preset_helper = preset_helper

@@ -29,7 +29,7 @@ from optuna.integration import PyTorchLightningPruningCallback
 import torch
 from torch import nn
 from torch.optim import Adam
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
 import wandb
 
 from data.datasets import SynthDatasetPkl

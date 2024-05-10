@@ -1,3 +1,10 @@
+"""
+Module to generate a dataset of hand-crafted presets given a existing dataset of presets stored in a json file 
+Only the synthesizer parameters used during training (i.e., for generating the training dataset) are 
+considered; the remaining parameters are set to their default values and excluded, and
+silent and duplicate presets are removed.
+"""
+
 import json
 import os
 from pathlib import Path
@@ -34,7 +41,24 @@ def generate_eval_dataset(
     batch_size: int = 128,
     num_workers: int = 8,
 ) -> None:
-    """TODO"""
+    """
+    Function used to generate a dataset of hand-crafted presets
+    given a existing dataset of hand-crafted presets stored in a json file. The dataset should be a
+    a dictionary formatted as follows:
+    {preset_id: {'meta': {...}, 'parameters': {'param_name': param_val}}.
+
+    Only the synthesizer parameters used during training (i.e., for generating the training dataset) are
+    considered; the remaining parameters are set to their default values and excluded, and
+    silent and duplicate presets are removed.
+
+    Args:
+        path_to_json_dataset (Union[str, Path]): Path to the json file containing the presets to be evaluated.
+        path_to_train_cfg (Union[str, Path]): Path to the configuration file used for training.
+        export_path (Union[str, Path]): Path where the modified dataset will be saved.
+        export_audio (bool): Whether or not to save the audio. (Defaults: True).
+        batch_size (int): Number of examples to process as once when creating the dataset. (Defaults: 128).
+        num_workers (int): Number of workers to use when loading examples. (Defaults: 8).
+    """
     print(f"Using device: {DEVICE}")
     ### Load the train config file and create export directory
     path_to_train_cfg = Path(path_to_train_cfg)
@@ -170,7 +194,7 @@ def generate_eval_dataset(
 if __name__ == "__main__":
 
     SYNTH = "diva"
-    VERSION = 1
+    VERSION = 1  # Version number of the training dataset
 
     BATCH_SIZE = 128
     NUM_WORKERS = 8

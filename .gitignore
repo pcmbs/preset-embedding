@@ -16,10 +16,8 @@ __pycache__/
 .python-version
 others/
 
-
 # Artifacts
 checkpoints/
-div_check/
 logs/
 lightning_logs/
 wandb/
@@ -29,3 +27,7 @@ data/stats/
 data/synths
 data/datasets/**/**
 !data/datasets/.gitkeep
+
+# reports
+reports/
+!reports/.gitkeep

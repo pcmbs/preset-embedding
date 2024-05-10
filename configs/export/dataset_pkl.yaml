@@ -1,9 +1,11 @@
 # @package _global_
 
+# Config file for the synthetic preset datasets generation.
+# Associated code can be found in src/export/dataset_pkl.py
+
 defaults:
   - _self_ 
   - synth: ???
-
 
 ############ Export path Settings
 # Path relative to the project root where the dataset will be exported
@@ -18,11 +20,12 @@ tag: ???
 # dataset size: 
 # For MMR validation dataset: need to be num_eval * num_preds_per_eval
 # e.g., for 128 evaluations and 512 predictions per eval we have 128 * 512 = 64_512 samples
+# For the test set: arbitrary since we use the one-vs-all approach
 dataset_size: 65_536
 
 # start index of the dataset
 # Can be used to generate a subset of the dataset if set together with dataset_size
-# in order to generate a dataset simultaneously on several machines
+# in order to generate a dataset simultaneously on several machines (see cat_dataset_pkl.yaml)
 # Ex: start_index=0 and dataset_size=64_512 will generate the first 64_512 samples while
 #     start_index=64_512 and dataset_size=64_512 will generate the second 64_512 samples, etc.
 start_index: 0 # inclusive
@@ -35,13 +38,12 @@ midi_note: 60
 midi_velocity: 100
 midi_duration_in_sec: 2.0
 
-# batch size used to generate the dataset (will not be stored)
+# batch size used to generate the dataset (to be set as high as possible)
 batch_size: 128
 
 # number of workers used to generate the dataset
 num_workers: 8
 
-# can be useful to check the target audio for the MRR evaluation since those are taken from the first batch
 # export the first i samples if int, set to -1 to export all, and set to 0 to skip
 export_audio: 0
 

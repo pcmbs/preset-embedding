@@ -1,6 +1,6 @@
 """
 Module implementing a torch Dataset used to load audio embeddings (targets) and
-synth parameters (features) from .pkl files.
+synth parameters (input) from .pkl files.
 """
 
 from pathlib import Path
@@ -21,10 +21,10 @@ class SynthDatasetPkl(Dataset):
         (features) from .pkl files.
 
         Args
-        - `path_to_dataset` (Union[str, Path]): path to the folder containing the pickled files
-        - `mmap` (bool): whether the audio_embeddings.pkl and synth_parameters.pkl tensors should be mmaped
-        rather than loading all the storages into memory. This can be advantageous for large datasets.
-        (Default: True)
+            path_to_dataset (Union[str, Path]): path to the folder containing the pickled files
+            mmap (bool): whether the audio_embeddings.pkl and synth_parameters.pkl tensors should
+            be mmaped rather than loading all the storages into memory.
+            This can be advantageous for large datasets. (Default: True)
         """
         super().__init__()
 
@@ -46,34 +46,40 @@ class SynthDatasetPkl(Dataset):
 
     @property
     def audio_fe_name(self) -> str:
+        "Audio model used as feature extractor."
         return self.configs_dict["audio_fe"]
 
     @property
     def embedding_dim(self) -> int:
+        "Audio model's output dimension."
         return self.configs_dict["num_outputs"]
 
     @property
     def name(self) -> str:
+        "Dataset name"
         return self.path_to_dataset.stem
 
     @property
     def synth_name(self) -> str:
+        "Synthesizer name"
         return self.configs_dict["synth"]
 
     @property
     def num_used_synth_parameters(self) -> int:
+        "Number of used synthesizer parameters used to generate the dataset."
         return self.configs_dict["num_used_params"]
 
     @property
     def embedding_size_in_mb(self) -> float:
+        """Size of the audio embeddings tensor in MB."""
         return round(self.audio_embeddings.element_size() * self.audio_embeddings.nelement() * 1e-6, 2)
 
     @property
     def synth_parameters_size_in_mb(self) -> float:
+        """Size of the synthesizer parameters tensor in MB."""
         return round(self.synth_parameters.element_size() * self.synth_parameters.nelement() * 1e-6, 2)
 
     def __len__(self) -> int:
-        # return len(self.audio_embeddings)
         return self.configs_dict["dataset_size"]
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor]:
