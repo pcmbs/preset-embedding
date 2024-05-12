@@ -17,7 +17,6 @@ __pycache__/
 others/
 
 # Artifacts
-checkpoints/
 logs/
 lightning_logs/
 wandb/
