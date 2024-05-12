@@ -1,2 +1,3 @@
+# Ensure that PNG and PDF files are treated as binary
 *.png binary
 *.pdf binary
