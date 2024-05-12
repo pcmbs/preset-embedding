@@ -3,7 +3,7 @@
 # synthesizer used to generate the dataset
 name: diva
 
-# synthesizer parameters to exclude when generating presets
+# synthesizer parameters to exclude when generating presets (support asterisk for excluding a group of parameters)
 parameters_to_exclude_str: 
   - "main:output"
   - "vcc:*"

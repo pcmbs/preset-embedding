@@ -1,7 +1,8 @@
 """
 Module to display the evaluation results.
-Table will be printed to the console and saved as a csv file in the output folder.
-Figures will be saved in the output folder.
+
+Table will be printed to the console and saved as a csv file in the output folder (along with the figures), 
+which defaults to `PROJECT_ROOT/reports/eval_results`
 """
 
 import os
@@ -10,7 +11,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import matplotlib.pyplot as plt
 
-from utils.visualization import (
+from utils.visualization.eval_results import (
     load_results,
     get_results_df,
     synthetic_presets_results_df,
@@ -47,7 +48,7 @@ PRINT_LATEX = False
 # if a single folder is present, set it to None
 SUFFIX = None
 # Directory where to export the results
-EXPORT_DIR = PROJECT_ROOT / "reports" / "eval_results"
+EXPORT_DIR = PROJECT_ROOT / "reports" / "eval"
 
 if __name__ == "__main__":
 
