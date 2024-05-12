@@ -8,7 +8,7 @@ Code source repository for my master's thesis on Neural Proxies for Sound Synthe
 > This work presents a simple method for approximating black-box sound synthesizers and aims to overcome the limitations associated with parameter loss in neural-based methods for Automatic Synthesizer Programming (nASP) in handling the highly nonlinear relationship between synthesizer parameters and synthesized audio. The proposed method relies on training a neural network capable of mapping synthesizer presets onto a perceptually informed embedding space defined by a pretrained audio model. This process effectively creates a neural proxy for a given synthesizer by leveraging the audio representations learned by the pretrained model via a cross-modal knowledge distillation task. The effectiveness of various neural network architectures, including feedforward, recurrent, and transformer-based models, in encoding synthesizer presets was evaluated using the mean reciprocal rank and averaged $L^1$ error on both synthetic and hand-crafted presets from three popular software synthesizers. Encouraging results were obtained for all synthesizers, paving the way for future research into the application of synthesizer proxies for nASP methods focusing on non-differentiable, black-box synthesizers.
 
 <p align="center">
-   <img src="./assets/method_overview.png">  
+   <img src="./assets/overview.png">  
 </p>
 
 ## Installation
