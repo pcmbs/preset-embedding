@@ -29,5 +29,5 @@ data/datasets/**/**
 !data/datasets/.gitkeep
 
 # reports
-reports/
-!reports/.gitkeep
+results/
+!results/.gitkeep
