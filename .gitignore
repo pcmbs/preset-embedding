@@ -23,11 +23,10 @@ lightning_logs/
 wandb/
 
 # data
-data/stats/
 data/synths
 data/datasets/**/**
 !data/datasets/.gitkeep
 
 # reports
-results/
-!results/.gitkeep
+# results/
+# !results/.gitkeep
